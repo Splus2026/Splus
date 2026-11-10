@@ -1,0 +1,11 @@
+# Синева+ без векторных моделей (лёгкая установка, без torch):  pip install -r requirements-compact.txt
+pymysql>=1.0,<1.1
+openpyxl>=3.1
+python-docx>=1.1
+numpy>=1.26
+psutil>=5.9
+elasticsearch>=7.17,<9
+nltk>=3.8
+pypdf>=4.0
+keyboard>=0.13
+pyperclip>=1.8
