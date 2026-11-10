@@ -33,6 +33,11 @@ on:
 permissions:
   contents: write
 
+# Русский вывод в консоли Windows (иначе cp1252 и сбой на первой русской букве)
+env:
+  PYTHONUTF8: '1'
+  PYTHONIOENCODING: utf-8
+
 jobs:
   plan:
     runs-on: ubuntu-latest
@@ -199,4 +204,3 @@ jobs:
             gh release create "$TAG" out/* --title "Синева+ $VER" --notes "Сборка от $(date -u +%d.%m.%Y) (запуск №${{ github.run_number }})" --latest
           fi
           echo "https://github.com/${{ github.repository }}/releases/tag/$TAG" >> "$GITHUB_STEP_SUMMARY"
-
