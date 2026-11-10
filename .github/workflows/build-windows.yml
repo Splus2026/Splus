@@ -1,0 +1,201 @@
+name: Build Windows
+
+# Запуск вручную: Actions -> Build Windows -> Run workflow. Отметьте, что нужно собрать:
+#   zip полной / компактной версии и/или их установщики. Остальное не собирается.
+on:
+  workflow_dispatch:
+    inputs:
+      full_zip:
+        description: 'Полная версия (с MiniLM): zip-архив'
+        type: boolean
+        default: false
+      full_installer:
+        description: 'Полная версия (с MiniLM): установщик'
+        type: boolean
+        default: false
+      compact_zip:
+        description: 'Компактная версия: zip-архив'
+        type: boolean
+        default: true
+      compact_installer:
+        description: 'Компактная версия: установщик'
+        type: boolean
+        default: true
+      run_tests:
+        description: 'Прогнать автоматические проверки перед сборкой'
+        type: boolean
+        default: true
+      publish:
+        description: 'Выложить результат в Releases (ссылка для скачивания)'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.m.outputs.matrix }}
+      any: ${{ steps.m.outputs.any }}
+    steps:
+      - id: m
+        shell: python
+        run: |
+          import json, os
+          inp = {
+              'full': (os.environ['FULL_ZIP'] == 'true', os.environ['FULL_INST'] == 'true'),
+              'compact': (os.environ['COMPACT_ZIP'] == 'true', os.environ['COMPACT_INST'] == 'true'),
+          }
+          include = [{'variant': v, 'zip': z, 'installer': i} for v, (z, i) in inp.items() if z or i]
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write('matrix=' + json.dumps({'include': include}) + '\n')
+              f.write('any=' + ('true' if include else 'false') + '\n')
+          if not include:
+              print('::error::Ничего не отмечено: выберите хотя бы один пункт при запуске.')
+        env:
+          FULL_ZIP: ${{ inputs.full_zip }}
+          FULL_INST: ${{ inputs.full_installer }}
+          COMPACT_ZIP: ${{ inputs.compact_zip }}
+          COMPACT_INST: ${{ inputs.compact_installer }}
+      - if: steps.m.outputs.any != 'true'
+        run: exit 1
+
+  build:
+    needs: plan
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    name: ${{ matrix.variant }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Версия программы
+        id: ver
+        shell: pwsh
+        run: |
+          $line = Select-String -Path sp.py -Pattern '^APP_VERSION\s*=\s*"([^"]+)"' | Select-Object -First 1
+          $v = if ($line) { $line.Matches[0].Groups[1].Value } else { '1.0.0' }
+          "version=$v" >> $env:GITHUB_OUTPUT
+          Write-Host "Версия: $v"
+
+      - name: Библиотеки (с повторами при сбоях сети)
+        shell: pwsh
+        run: |
+          function Retry($script) {
+            for ($i = 1; $i -le 4; $i++) {
+              & $script
+              if ($LASTEXITCODE -eq 0) { return }
+              Write-Host "Попытка $i не удалась, повтор через 15 с"
+              Start-Sleep -Seconds 15
+            }
+            throw "Не удалось установить библиотеки"
+          }
+          python -m pip install --upgrade pip
+          if ('${{ matrix.variant }}' -eq 'full') {
+            # PyTorch без CUDA: в несколько раз меньше
+            Retry { python -m pip install torch --index-url https://download.pytorch.org/whl/cpu }
+            Retry { python -m pip install -r requirements.txt pyinstaller }
+          } else {
+            # Компактная: всё, кроме MiniLM (sentence-transformers/PyTorch); gensim, scikit-learn, scipy нужны для FastText и LSA
+            Get-Content requirements.txt | Where-Object { $_ -notmatch '^\s*sentence-transformers' } | Set-Content requirements-ci-compact.txt -Encoding utf8
+            Retry { python -m pip install -r requirements-ci-compact.txt pyinstaller }
+          }
+
+      - name: Автоматические проверки
+        if: ${{ inputs.run_tests }}
+        shell: pwsh
+        run: python tests/run_all.py
+
+      - name: Manticore (из релиза deps)
+        shell: pwsh
+        run: |
+          $url = "https://github.com/${{ github.repository }}/releases/download/deps/Manticore.zip"
+          $ok = $false
+          for ($i = 1; $i -le 4 -and -not $ok; $i++) {
+            try { Invoke-WebRequest $url -OutFile Manticore.zip; $ok = $true }
+            catch { Write-Host "Попытка $i не удалась: $_"; Start-Sleep -Seconds 10 }
+          }
+          if (-not $ok) { throw "Нет файла Manticore.zip в релизе deps. Загрузите его (см. инструкцию) и запустите снова." }
+          7z x Manticore.zip -o_m -y | Out-Null
+          $searchd = Get-ChildItem _m -Recurse -Filter searchd.exe | Select-Object -First 1
+          if (-not $searchd) { throw "В Manticore.zip не найден searchd.exe" }
+          if (Test-Path Manticore) { Remove-Item Manticore -Recurse -Force }
+          Move-Item $searchd.Directory.Parent.FullName Manticore
+          Write-Host ("Manticore: " + [math]::Round((Get-ChildItem Manticore -Recurse -File | Measure-Object Length -Sum).Sum / 1MB) + " МБ")
+
+      - name: Сборка Sineva.exe (PyInstaller)
+        shell: pwsh
+        env:
+          SINEVA_VARIANT: ${{ matrix.variant }}
+        run: python -m PyInstaller --noconfirm --clean --distpath dist --workpath build/${{ matrix.variant }} sineva.spec
+
+      - name: Проверка результата сборки
+        shell: pwsh
+        run: |
+          foreach ($p in "dist\Sineva_${{ matrix.variant }}\Sineva.exe", "dist\Sineva_${{ matrix.variant }}\Manticore\bin\searchd.exe") {
+            if (-not (Test-Path $p)) { throw "Нет файла $p" }
+          }
+
+      - name: zip с максимальным сжатием (7-Zip)
+        if: ${{ matrix.zip }}
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force out | Out-Null
+          $name = "Sineva_${{ matrix.variant }}_${{ steps.ver.outputs.version }}.zip"
+          Push-Location dist
+          7z a -tzip -mx=9 -mfb=258 -mpass=15 "..\out\$name" "Sineva_${{ matrix.variant }}" | Out-Null
+          Pop-Location
+          Write-Host ("$name : " + [math]::Round((Get-Item "out\$name").Length / 1MB) + " МБ")
+
+      - name: Установщик (Inno Setup)
+        if: ${{ matrix.installer }}
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { $iscc = "$env:ProgramFiles\Inno Setup 6\ISCC.exe" }
+          & $iscc /Qp "/DVariant=${{ matrix.variant }}" "/DAppVersion=${{ steps.ver.outputs.version }}" sineva.iss
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup завершился с ошибкой" }
+          New-Item -ItemType Directory -Force out | Out-Null
+          Move-Item installer\*.exe out\
+          Get-ChildItem out | ForEach-Object { Write-Host ($_.Name + " : " + [math]::Round($_.Length / 1MB) + " МБ") }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Sineva_${{ matrix.variant }}
+          path: out/*
+          compression-level: 0
+          retention-days: 14
+
+  publish:
+    needs: build
+    if: ${{ inputs.publish && needs.build.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VER=$(grep -m1 -oP '^APP_VERSION\s*=\s*"\K[^"]+' sp.py || echo 1.0.0)
+          TAG="v$VER"
+          ls -la out
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" out/* --clobber
+          else
+            gh release create "$TAG" out/* --title "Синева+ $VER" --notes "Сборка от $(date -u +%d.%m.%Y) (запуск №${{ github.run_number }})" --latest
+          fi
+          echo "https://github.com/${{ github.repository }}/releases/tag/$TAG" >> "$GITHUB_STEP_SUMMARY"
