@@ -1,0 +1,87 @@
+{
+ "bases": {
+  "Без запятых.txt": [
+   "просто текст",
+   "",
+   ""
+  ],
+  "Второй.Docx": [
+   "Имя",
+   "SEP",
+   ""
+  ],
+  "Таблица.XLSX": [
+   "Имя",
+   "SEP",
+   "подстрока"
+  ],
+  "Файл.TXT": [
+   "Только имя",
+   "",
+   ""
+  ]
+ },
+ "debug_log_enabled": true,
+ "default_separator": "",
+ "elastic_host": "localhost",
+ "elastic_index": "documents",
+ "elastic_port": "9200",
+ "enable_numerator_on_update": false,
+ "engine_params": {
+  "db_path": null,
+  "debug_log_enabled": true,
+  "default_separator": "",
+  "elastic_host": "localhost",
+  "elastic_index": "documents",
+  "elastic_port": 9200,
+  "host": "localhost",
+  "index": "documents",
+  "manticore_host": "localhost",
+  "manticore_index": "documents",
+  "manticore_port": 9306,
+  "manticore_search_limit": 200,
+  "port": 9200
+ },
+ "engine_type": "fts5",
+ "excel_split_page_size": 20,
+ "excel_split_view_enabled": false,
+ "highlight_context_size": 7,
+ "key_concepts_only": true,
+ "last_db": null,
+ "manticore_host": "localhost",
+ "manticore_index": "documents",
+ "manticore_port": "9306",
+ "manticore_search_limit": 200,
+ "max_display_chars": 50000,
+ "merge_output_dir": "DB",
+ "merge_source_dir": "D:/100%/с пробелами",
+ "password_hash": "H",
+ "password_salt": "",
+ "search_delay_ms": 300,
+ "vector_model_params": {
+  "Плохая": {
+   "window": 5
+  }
+ },
+ "vector_model_topn": 15,
+ "vector_model_type": "fasttext",
+ "vector_models": {
+  "FT Х": [
+   "a",
+   "b",
+   "c"
+  ]
+ },
+ "vector_models_dir": "vector_models",
+ "vector_semantic_window": {
+  "M1": {
+   "indices": [
+    "a",
+    "b"
+   ],
+   "mode": "x"
+  }
+ },
+ "vector_sentences_after": 10,
+ "vector_sentences_before": 7
+}

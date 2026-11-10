@@ -1,0 +1,164 @@
+{
+ "bases": {
+  "a.txt": [
+   "Спирали",
+   "Numeric",
+   ""
+  ],
+  "an.txt": [
+   "N",
+   "N1500",
+   ""
+  ],
+  "ay.docx": [
+   "Живая Этика",
+   "N1000",
+   ""
+  ],
+  "bibl.txt": [
+   "Библия",
+   "N700",
+   ""
+  ],
+  "consp.txt": [
+   "Конспекты",
+   "N1000",
+   ""
+  ],
+  "dl.docx": [
+   "Добротолюбие 1-5 тома",
+   "N1000",
+   ""
+  ],
+  "dp_1.txt": [
+   "Духовный путь",
+   "Numeric",
+   ""
+  ],
+  "dpk.txt": [
+   "Духовный путь (+комментарии)",
+   "ПОСТ",
+   ""
+  ],
+  "ei.txt": [
+   "Письма Е.И.Рерих",
+   "N1000",
+   ""
+  ],
+  "g.txt": [
+   "Грани Агни Йоги Абрамова",
+   "Грани Агни Йоги",
+   ""
+  ],
+  "gita.txt": [
+   "Бхагавад-Гита",
+   "N700",
+   ""
+  ],
+  "help.docx": [
+   "Справка по программе",
+   "Numeric",
+   ""
+  ],
+  "hram.docx": [
+   "Учение Храма",
+   "N1000",
+   ""
+  ],
+  "isida_1.docx": [
+   "Разоблаченная Изида",
+   "N2000",
+   ""
+  ],
+  "kapli.docx": [
+   "Капли дождя и Книга Учителей",
+   "N1000",
+   ""
+  ],
+  "letrmah.docx": [
+   "Письма Махатм",
+   "N1500",
+   ""
+  ],
+  "live_2.docx": [
+   "Две жизни",
+   "N1000",
+   ""
+  ],
+  "nk.docx": [
+   "Работы Н.К.Рериха",
+   "N1000",
+   ""
+  ],
+  "ns.docx": [
+   "Несвятые святые",
+   "N1000",
+   ""
+  ],
+  "r.txt": [
+   "Архив Рерихов",
+   "N700",
+   ""
+  ],
+  "td.docx": [
+   "Тайная Доктрина І-ІІ-ІІІ тома",
+   "N2000",
+   ""
+  ],
+  "Номенклатура.xlsx": [
+   "Номенклатура",
+   "ExcelRow1",
+   "ИСПОЛЬЗОВАТЬ"
+  ],
+  "Ост.xlsx": [
+   "Остатки",
+   "ExcelRow1",
+   ""
+  ]
+ },
+ "debug_log_enabled": false,
+ "default_separator": "N1000",
+ "elastic_host": "localhost",
+ "elastic_index": "documents",
+ "elastic_port": "9200",
+ "enable_numerator_on_update": false,
+ "engine_params": {
+  "db_path": null,
+  "debug_log_enabled": false,
+  "default_separator": "N1000",
+  "elastic_host": "localhost",
+  "elastic_index": "documents",
+  "elastic_port": 9200,
+  "host": "localhost",
+  "index": "documents",
+  "manticore_host": "localhost",
+  "manticore_index": "documents",
+  "manticore_port": 9306,
+  "manticore_search_limit": 200,
+  "port": 9200
+ },
+ "engine_type": "manticore",
+ "excel_split_page_size": 50,
+ "excel_split_view_enabled": true,
+ "highlight_context_size": 500,
+ "key_concepts_only": false,
+ "last_db": null,
+ "manticore_host": "localhost",
+ "manticore_index": "documents",
+ "manticore_port": "9306",
+ "manticore_search_limit": 200,
+ "max_display_chars": 50000,
+ "merge_output_dir": "DB",
+ "merge_source_dir": "",
+ "password_hash": "",
+ "password_salt": "",
+ "search_delay_ms": 300,
+ "vector_model_params": {},
+ "vector_model_topn": 40,
+ "vector_model_type": "fasttext",
+ "vector_models": {},
+ "vector_models_dir": "vector_models",
+ "vector_semantic_window": {},
+ "vector_sentences_after": 0,
+ "vector_sentences_before": 0
+}
