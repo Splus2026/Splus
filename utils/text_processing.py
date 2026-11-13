@@ -5,6 +5,8 @@ from collections import OrderedDict
 from datetime import datetime
 from xml.etree import ElementTree as ET
 
+from utils import mconfig
+
 # Кодировки, которые пробуются по очереди при чтении .txt файлов —
 # используется всеми модулями, читающими файлы-источники (общий, единый список).
 TEXT_ENCODINGS = ['utf-8', 'cp1251', 'latin-1', 'koi8-r']
@@ -114,12 +116,12 @@ def read_text_file(file_path: str, keep_empty_docx_paragraphs: bool = True) -> s
         paragraphs = _get_docx_paragraphs_cached(file_path)
         if not keep_empty_docx_paragraphs:
             paragraphs = [p for p in paragraphs if p.strip()]
-        return "\n".join(paragraphs)
+        return mconfig.strip("\n".join(paragraphs))
 
     for enc in TEXT_ENCODINGS:
         try:
             with open(file_path, 'r', encoding=enc) as f:
-                return f.read()
+                return mconfig.strip(f.read())
         except UnicodeDecodeError:
             continue
     raise Exception("Не удалось прочитать файл ни в одной из кодировок.")
