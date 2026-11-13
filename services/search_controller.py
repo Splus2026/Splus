@@ -186,13 +186,19 @@ class SearchController:
             self._display_page()
         return self.brief_mode
 
-    def toggle_marks_only(self):
-        """Режим «только отмеченное»: вместо текста топиков — одни подчёркнутые места, места с крупным шрифтом
-           и цветом и слова с мыслями (склеены « … »). Работает вместе с «Кратко»/«Всё» (отмеченное главнее)."""
-        self.renderer.marks_only = not self.renderer.marks_only
+    VIEW_MODES = ('all', 'brief', 'marks')
+
+    def set_view_mode(self, mode):
+        """Режим показа текста топиков: 'all' — полный, 'brief' — только предложения с подсветками,
+           'marks' — только отмеченное (подчёркнутые места, места с крупным шрифтом и цветом и слова с
+           мыслями, склеенные « … »). Перерисовывает страницу один раз; возвращает режим."""
+        if mode not in self.VIEW_MODES:
+            raise ValueError(f"неизвестный режим показа: {mode}")
+        self.brief_mode = (mode == 'brief')
+        self.renderer.marks_only = (mode == 'marks')
         if not self.is_viewing_file:
             self._display_page()
-        return self.renderer.marks_only
+        return mode
 
     # ---------- Режим просмотра одного файла ("**") ----------
     BROWSE_QUERY = '**'

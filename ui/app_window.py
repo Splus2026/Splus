@@ -29,40 +29,6 @@ from ui.visualization_controller import VisualizationController
 from ui.custom_dialogs import messagebox
 
 
-def nav_toggle_layout(char_w, kp_w=0):
-    """Отступы и ширина кнопок "Ч", "КП" и "Кратко/Всё" в строке навигации.
-       char_w — ширина одной "позиции" (знака шрифта кнопок) в пикселях, kp_w —
-       реальная ширина кнопки "КП" в пикселях (0 — кнопки нет).
-
-       Отступ перед переключателем раньше был 180 пикселей (около 20 позиций).
-       Теперь он на 5 позиций короче, а сама кнопка на 3 позиции шире (6 знаков
-       "Кратко" + 3). Зачем: при обычном размере окна строка из кнопок
-       навигации не вмещает всех, и менеджер раскладки сжимает ПОСЛЕДНЮЮ кнопку —
-       из "Кратко" оставалось видно только "ратк". Сдвиг влево возвращает ей
-       место, а запас по бокам от более широкой кнопки (надпись стоит по центру)
-       поглотит остаток сжатия, не задев букв. Постоянная ширина заодно не даёт
-       кнопке менять размер при переключении "Кратко" <-> "Всё".
-
-       "КП" встаёт справа от "Ч" В ТОМ ЖЕ отступе: её ширина (и просвет в 4
-       пикселя между "Ч" и "КП") вычитается из отступов, так что "Кратко/Всё"
-       остаётся на прежнем месте, а строка в целом не становится шире — иначе
-       вернулось бы сжатие. "Ч" с "КП" остаются посередине: убранное делится
-       поровну. Единица — позиция шрифта, а не пиксель: при другом масштабе
-       Windows "5 позиций" остаются пятью."""
-    pads_total = 150 - 5 * char_w          # от прежних 75 + 75 после сдвига на 5 позиций
-    inner = 0
-    if kp_w > 0:
-        inner = 4
-        pads_total -= kp_w + inner
-    pads_total = max(0, pads_total)
-    return {
-        'underline_padx': (pads_total - pads_total // 2, 0),
-        'kp_padx': (inner, 0),
-        'brief_padx': (pads_total // 2, 3),
-        'brief_width': 6 + 3,
-    }
-
-
 class NavButton(tk.Button):
     """Кнопка постраничной навигации по результатам.
 
@@ -146,7 +112,6 @@ class AppWindow(ABC):
         self.btn_back = None
         self.btn_forward = None
         self.btn_last = None
-        self.btn_brief_toggle = None
         self.btn_variations_toggle = None
         # Состояние кнопки "−В/+В" (исключение словоформ, см. toggle_word_variations).
         self._variations_excluded = False
@@ -408,39 +373,13 @@ class AppWindow(ABC):
                                   padx=3, pady=1, state='disabled')
         self.btn_last.pack(side='left', padx=3)
 
-        # Ширина одной "позиции" (знака) шрифта кнопок — в ней заданы сдвиг и
-        # ширина ниже (см. nav_toggle_layout).
-        import tkinter.font as tkfont
-        char_w = tkfont.Font(root=self.root, font=('Arial', 12, 'bold')).measure('0')
-
-        # "Ч" — подчеркнуть выделенное в окне результатов (как в Word; повторно —
-        # снять). Стоит посередине между "В конец" и переключателем "Кратко"/"Всё".
-        self.btn_underline = tk.Button(nav_frame, text="Ч", command=self._toggle_underline,
-                                       font=('Arial', 12, 'bold underline'), bg='#6a4a8a', fg='white',
-                                       padx=6, pady=1)
-        # "КП" (синяя) — справа от "Ч": добавить выделенное слово в словарь ключевых
-        # понятий (см. _add_key_concept). Берём её РЕАЛЬНУЮ ширину, чтобы вычесть из
-        # отступов (см. nav_toggle_layout); если Tk её ещё не посчитал — прикидка.
+        # "КП" (синяя): добавить выделенное слово в словарь ключевых понятий (см. _add_key_concept).
+        # Кнопки "Ч" и "Все/Кратко/Отметки" живут во второй строке (ui/layer_bar.py).
         self.btn_key_concepts = tk.Button(nav_frame, text="КП", command=self._add_key_concept,
                                           font=('Arial', 12, 'bold'), bg='#2a6fbf', fg='white',
                                           padx=6, pady=1)
-        kp_w = self.btn_key_concepts.winfo_reqwidth()
-        if kp_w <= 1:
-            kp_w = round(4.5 * char_w)
-        toggle_layout = nav_toggle_layout(char_w, kp_w)
-        self.btn_underline.pack(side='left', padx=toggle_layout['underline_padx'])
-        ToolTip(self.btn_underline, "Подчеркнуть")
-        self.btn_key_concepts.pack(side='left', padx=toggle_layout['kp_padx'])
+        self.btn_key_concepts.pack(side='left', padx=(80, 0))
         ToolTip(self.btn_key_concepts, "Ключевые понятия")
-
-        # Переключатель "Кратко"/"Всё" (надпись — то, во что он переключит).
-        # Шире и левее прежнего — см. nav_toggle_layout.
-        self.btn_brief_toggle = tk.Button(nav_frame, text="Кратко", command=self.toggle_brief_mode,
-                                          font=('Arial', 12, 'bold'), bg='#4a7a8a', fg='white',
-                                          padx=3, pady=1, width=toggle_layout['brief_width'])
-        self.btn_brief_toggle.pack(side='left', padx=toggle_layout['brief_padx'])
-        # Подсказка читает надпись кнопки в момент показа (см. _brief_tooltip_text).
-        ToolTip(self.btn_brief_toggle, self._brief_tooltip_text)
 
         # "−В/+В" — исключить/вернуть явные словоформы одного и того же
         # слова в окне "Совпадения" (см. toggle_word_variations). Справа,
@@ -1361,20 +1300,6 @@ class AppWindow(ABC):
                 holder['password_hash'] = old_hash
                 holder['password_salt'] = old_salt
             raise
-
-    def _brief_tooltip_text(self):
-        """Подсказка переключателя "Кратко"/"Всё": надпись на кнопке — то, во что
-           она переключит. У "Всё" подсказка "Полный текст"; у "Кратко" подсказки
-           нет (пустой текст — ToolTip ничего не показывает)."""
-        return "Полный текст" if self.btn_brief_toggle.cget('text') == "Всё" else ""
-
-    def toggle_brief_mode(self):
-        """Переключает кнопку и режим отображения топиков между
-           "Кратко" (только предложения с подсветками) и "Всё"
-           (полный текст) — в пределах текущей страницы результатов.
-           Надпись на кнопке — то, во что она переключит."""
-        brief_enabled = self.search_controller.toggle_brief_mode()
-        self.btn_brief_toggle.config(text="Всё" if brief_enabled else "Кратко")
 
     def _back_to_results_from_file(self):
         if hasattr(self.search_controller, '_back_to_results_from_file'):

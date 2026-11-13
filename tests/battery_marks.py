@@ -347,8 +347,9 @@ try:
 finally:
     os.chdir(cwd)
 
+src = open(os.path.join(env.ROOT, 'ui/layer_bar.py'), encoding='utf-8').read()
+check('кнопка «Ч»: подчёркнутый шрифт, первая во второй строке слева, подсказка «Подчеркнуть»', "text=\"Ч\"" in src and "'bold underline'" in src and "self.btn_underline.pack(side='left'" in src and 'ToolTip(self.btn_underline, "Подчеркнуть")' in src)
 src = open(os.path.join(env.ROOT, 'ui/app_window.py'), encoding='utf-8').read()
-check('кнопка «Ч»: подчёркнутый шрифт, слева (между «В конец» и «Кратко/Всё»), подсказка «Подчеркнуть»', "text=\"Ч\"" in src and "'bold underline'" in src and "self.btn_underline.pack(side='left'" in src and 'ToolTip(self.btn_underline, "Подчеркнуть")' in src)
 check('пункт «Экспорт подчеркнутых» в меню «Настройки»', 'self.settings_menu.add_command(label="Экспорт подчеркнутых", command=self.export_underlined)' in src)
 check('база закрывается при выходе', "getattr(self, 'marks_store', None)" in src and 'marks_store.close()' in src)
 sc = open(os.path.join(env.ROOT, 'services/search_controller.py'), encoding='utf-8').read()

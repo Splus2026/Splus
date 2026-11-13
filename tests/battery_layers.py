@@ -190,5 +190,18 @@ check('при подключении (копирование в DB) строка
 cd['isida_1.txt'] = ('Новое имя', 'N300', 'искл'); open(p, 'w', encoding='utf-8').write('mconfig="isida_1.txt = Ещё, N400"\nТекст'); fm.apply_book_configs([p], override=True)
 check('подстрока-исключение (Excel) сохраняется', cd['isida_1.txt'] == ('Ещё', 'N400', 'искл'))
 
+# ===================== F. режимы показа «Все / Кратко / Отметки» =====================
+import types
+from services.search_controller import SearchController
+sc = SearchController.__new__(SearchController); shown = []
+sc.renderer = types.SimpleNamespace(marks_only=False); sc.brief_mode = False; sc.is_viewing_file = False
+sc._display_page = lambda *a, **k: shown.append((sc.brief_mode, sc.renderer.marks_only))
+sc.set_view_mode('brief'); sc.set_view_mode('marks'); sc.set_view_mode('all')
+check('режимы: кратко -> отметки -> все; страница перерисована по разу, режимы не смешиваются', shown == [(True, False), (False, True), (False, False)], str(shown))
+sc.is_viewing_file = True; sc.set_view_mode('brief'); check('при просмотре файла режим запоминается без перерисовки', len(shown) == 3 and sc.brief_mode)
+try: sc.set_view_mode('x'); bad = False
+except ValueError: bad = True
+check('неизвестный режим — ошибка', bad)
+
 print(f"\nПроверок: {len(results)}, провалено: {results.count(False)}")
 sys.exit(1 if False in results else 0)

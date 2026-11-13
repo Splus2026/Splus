@@ -49,44 +49,21 @@ class FakeButton:
         self.afters.clear()
         return RecTop.made[-1].text if RecTop.made else None
 
-win = aw.AppWindow.__new__(aw.AppWindow)
-btn = FakeButton("Кратко"); win.btn_brief_toggle = btn
-state = {'brief': False}
-win.search_controller = types.SimpleNamespace(toggle_brief_mode=lambda: state.update(brief=not state['brief']) or state['brief'])
-
-# --- переключатель «Кратко» / «Всё» ---
-win.toggle_brief_mode()
-check('краткий режим включён -> на кнопке «Всё» (то, во что она переключит)', btn.cget('text') == 'Всё')
-win.toggle_brief_mode()
-check('краткий режим выключен -> на кнопке снова «Кратко»', btn.cget('text') == 'Кратко')
-check('слова «Развёрнуто» на кнопке больше нет', 'Развёрнуто' not in aw.AppWindow.toggle_brief_mode.__code__.co_consts)
-
-# --- подсказка ---
-btn.config(text='Всё'); check('_brief_tooltip_text: у «Всё» — «Полный текст»', win._brief_tooltip_text() == 'Полный текст')
-btn.config(text='Кратко'); check('_brief_tooltip_text: у «Кратко» подсказки нет (пустая строка)', win._brief_tooltip_text() == '')
-tip = ToolTip(btn, win._brief_tooltip_text)
-btn.config(text='Всё'); shown = btn.hover()
-check('наведение на «Всё» показывает «Полный текст»', shown == 'Полный текст', str(shown))
-btn.fire('<Leave>'); btn.config(text='Кратко'); shown = btn.hover()
-check('наведение на «Кратко» ничего не показывает', shown is None, str(shown))
-btn.fire('<Leave>'); win.toggle_brief_mode(); win.toggle_brief_mode()  # снова «Кратко» -> «Всё» через реальную логику
-state['brief'] = False; win.toggle_brief_mode(); shown = btn.hover()
-check('после реального переключения подсказка следует за надписью (стало «Всё» -> «Полный текст»)', btn.cget('text') == 'Всё' and shown == 'Полный текст', (btn.cget('text'), shown))
-
 # --- исходник: надписи и порядок кнопок ---
 src = open(os.path.join(env.ROOT, 'ui/app_window.py'), encoding='utf-8').read()
 check('надпись «Индексы:» вместо «Выбор индекса:»', 'tk.Label(header_frame, text="Индексы:"' in src and 'Выбор индекса' not in src)
 check('в коде интерфейса нет «Развёрнуто»/«Развернуто»', 'Развёрнуто' not in src and 'Развернуто' not in src)
-check('подсказка к переключателю подключена функцией', 'ToolTip(self.btn_brief_toggle, self._brief_tooltip_text)' in src)
 section = src[src.index('nav_frame = tk.Frame(center_frame'):src.index('# Верхнее и нижнее окно результатов')]
 order = re.findall(r'self\.(btn_\w+)\.pack\(', section)
-check('порядок слева направо: первая, назад, вперёд, в конец, «Ч», «КП», «Кратко/Всё»',
-      order == ['btn_first', 'btn_back', 'btn_forward', 'btn_last', 'btn_underline', 'btn_key_concepts', 'btn_brief_toggle'], str(order))
-check('отступы «Ч» и «Кратко/Всё» теперь считаются по шрифту (nav_toggle_layout), а не числами',
-      "padx=toggle_layout['underline_padx']" in section and "padx=toggle_layout['brief_padx']" in section)
-check('у переключателя постоянная ширина (не прыгает между «Кратко» и «Всё»)', "width=toggle_layout['brief_width']" in section)
-check("«Ч» больше не пакуется справа", "btn_underline.pack(side='right'" not in src)
+check('первая строка слева направо: первая, назад, вперёд, в конец, «КП»',
+      order == ['btn_first', 'btn_back', 'btn_forward', 'btn_last', 'btn_key_concepts'], str(order))
+lsrc = open(os.path.join(env.ROOT, 'ui/layer_bar.py'), encoding='utf-8').read()
+lorder = re.findall(r'self\.(btn_\w+)\.pack\(side=.left.', lsrc)
+check('вторая строка, левая группа: «Ч», «A+», «Цвет», «Мысль»', lorder == ['btn_underline', 'btn_big', 'btn_color', 'btn_note'], str(lorder))
+check('вторая строка, правая группа: «Все», «Кратко», «Отметки» (пакуются справа налево)',
+      re.findall(r"\('(\w+)', \"([^\"]+)\"", lsrc.split('self.mode_buttons = {}')[-1].split('self.mode_buttons[')[0]) == [('marks', 'Отметки'), ('brief', 'Кратко'), ('all', 'Все')] and "btn.pack(side='right'" in lsrc)
+check('«Ч» и переключатель «Кратко/Всё» больше не в первой строке', 'btn_underline' not in section and 'btn_brief_toggle' not in src)
 check("«−В/+В» по-прежнему пакуется справа (show_variations_button)", re.search(r"btn_variations_toggle\.pack\(side='right'", src) is not None)
-check('подсказка «Подчеркнуть» у «Ч» на месте', 'ToolTip(self.btn_underline, "Подчеркнуть")' in src)
+check('подсказка «Подчеркнуть» у «Ч» на месте', 'ToolTip(self.btn_underline, "Подчеркнуть")' in lsrc)
 print(f"\nПроверок: {len(results)}, провалено: {results.count(False)}")
 sys.exit(0 if all(results) else 1)

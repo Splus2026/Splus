@@ -143,18 +143,5 @@ aw.save_config = lambda c: saved.append(dict(c))
 src = open(os.path.join(env.ROOT, 'ui/app_window.py'), encoding='utf-8').read()
 check('пункт «Сменить пароль» в меню «Настройки»', 'self.settings_menu.add_command(label="Сменить пароль", command=self.change_password_dialog)' in src)
 
-# ===== E. раскладка кнопок =====
-lay = aw.nav_toggle_layout(9)
-check('9 px на позицию: «Кратко» на 5 позиций (45 px) левее — отступы 53 + 52 вместо 75 + 75', lay['underline_padx'] == (53, 0) and lay['brief_padx'] == (52, 3), str(lay))
-check('«Ч» остаётся посередине убранного (разница отступов ≤ 1 px)', abs(lay['underline_padx'][0] - lay['brief_padx'][0]) <= 1)
-check('общий сдвиг ровно 5 позиций', (75 + 75) - (lay['underline_padx'][0] + lay['brief_padx'][0]) == 45)
-check('кнопка шире на 3 позиции: 6 знаков «Кратко» + 3 = 9', lay['brief_width'] == 9)
-l150 = aw.nav_toggle_layout(13)
-check('при другом масштабе «5 позиций» остаются пятью (13 px на позицию -> сдвиг 65 px)', (150 - (l150['underline_padx'][0] + l150['brief_padx'][0])) == 65, str(l150))
-check('отступы не уходят в минус даже при огромном шрифте', min(aw.nav_toggle_layout(80)['underline_padx'][0], aw.nav_toggle_layout(80)['brief_padx'][0]) >= 0)
-check('char_w=0 -> прежние отступы (защита от сбоя измерения)', aw.nav_toggle_layout(0)['underline_padx'] == (75, 0) and aw.nav_toggle_layout(0)['brief_padx'] == (75, 3))
-check('в коде: ширина берётся из шрифта, раскладка применена к обеим кнопкам',
-      "tkfont.Font(root=self.root, font=('Arial', 12, 'bold')).measure('0')" in src and "padx=toggle_layout['underline_padx']" in src
-      and "padx=toggle_layout['brief_padx']" in src and "width=toggle_layout['brief_width']" in src)
 print(f"\nПроверок: {len(results)}, провалено: {results.count(False)}")
 sys.exit(0 if all(results) else 1)

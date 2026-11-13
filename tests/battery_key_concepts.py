@@ -293,22 +293,9 @@ check('заголовок облака тегов и «Всё пространс
       "text=f\"{title} — {len(placed)} слов — \"" in src_viz and "title=title)" in src_viz and "'Всё пространство модели'" in src_viz)
 
 # ===== J. раскладка и кнопка =====
-lay = aw.nav_toggle_layout(9, 41)
-check('9 px, КП 41 px: отступы 30 | КП | 30, просвет 4', lay['underline_padx'] == (30, 0) and lay['kp_padx'] == (4, 0) and lay['brief_padx'] == (30, 3), str(lay))
-prop = True
-for cw in range(7, 15):
-    for kp in range(30, 61):
-        if 150 - 5 * cw - kp - 4 >= 0:
-            L = aw.nav_toggle_layout(cw, kp)
-            prop &= (L['underline_padx'][0] + L['kp_padx'][0] + kp + L['brief_padx'][0]) == 150 - 5 * cw
-check('«Кратко/Всё» остаётся на месте: отступы + КП = прежний отступ (150 − 5 позиций) при любых размерах', prop)
-check('«Ч» с «КП» посередине (отступы слева и справа различаются не больше чем на 1)', all(abs(aw.nav_toggle_layout(cw, 41)['underline_padx'][0] - aw.nav_toggle_layout(cw, 41)['brief_padx'][0]) <= 1 for cw in range(7, 12)))
-check('без КП (kp_w=0) раскладка прежняя: 53 | 52', aw.nav_toggle_layout(9)['underline_padx'] == (53, 0) and aw.nav_toggle_layout(9)['brief_padx'] == (52, 3) and aw.nav_toggle_layout(9)['kp_padx'] == (0, 0))
-big_l = aw.nav_toggle_layout(20, 90); check('при очень крупном шрифте отступы не уходят в минус', min(big_l['underline_padx'][0], big_l['brief_padx'][0]) >= 0)
 section = src_app[src_app.index('nav_frame = tk.Frame(center_frame'):src_app.index('# Верхнее и нижнее окно результатов')]
-check('порядок слева направо: … «В конец», «Ч», «КП», «Кратко/Всё»', re.findall(r'self\.(btn_\w+)\.pack\(', section) == ['btn_first', 'btn_back', 'btn_forward', 'btn_last', 'btn_underline', 'btn_key_concepts', 'btn_brief_toggle'])
+check('порядок слева направо в первой строке: … «В конец», «КП» («Ч» и режимы показа — во второй строке)', re.findall(r'self\.(btn_\w+)\.pack\(', section) == ['btn_first', 'btn_back', 'btn_forward', 'btn_last', 'btn_key_concepts'])
 check('КП синяя, с подсказкой «Ключевые понятия»', 'text="КП"' in section and "bg='#2a6fbf'" in section and 'ToolTip(self.btn_key_concepts, "Ключевые понятия")' in section)
-check('ширина КП берётся реальная, с запасной прикидкой', 'self.btn_key_concepts.winfo_reqwidth()' in section and 'round(4.5 * char_w)' in section)
 
 print(f"\nПроверок: {len(results)}, провалено: {results.count(False)}")
 sys.exit(0 if all(results) else 1)

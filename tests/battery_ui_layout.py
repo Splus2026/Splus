@@ -18,12 +18,14 @@ U = ui_trace.build(aw); win = U.win
 def opts(widget): return U.new(U.id(widget))[2]
 def lay(widget): return U.layout(U.id(widget))
 def calls(widget, method=None): return U.calls(U.id(widget), method)
-def btn(text): ids = U.find('Button', text=text); return ids[0] if len(ids) == 1 else ids
+def btn(text):
+    ids = U.find('Button', text=text)
+    if len(ids) > 1: ids = [i for i in ids if U.layout(i) != ('pack', {'padx': (4, 0), 'side': 'right'})]   # кнопка режима показа «Все» второй строки — не «Все» индексов
+    return ids[0] if len(ids) == 1 else ids
 def bopts(text): return U.new(btn(text))[2]
 def blay(text): return U.layout(btn(text))
 def fn(name): return ('fn', name)
 def bound(widget): return [a[0] for m, a, k in calls(widget, 'bind')]
-def nav_layout(): kp = 40; char_w = __import__('tkinter.font', fromlist=['Font']).Font(root=win.root, font=('Arial', 12, 'bold')).measure('0'); return aw.nav_toggle_layout(char_w, kp)
 
 # ===================== A. зоны окна и порядок упаковки =====================
 top, status_row, main_paned = U.children(0)
@@ -66,10 +68,12 @@ expected_nav = [(win.btn_first, '<< В начало', 'AppWindow.go_to_first_pag
 for w_, text, command, layout in expected_nav:
     o = opts(w_); check(f'кнопка «{text}»: класс NavButton, команда {command}, стартует выключенной, в полосе навигации слева', U.new(U.id(w_))[0] == 'NavButton' and o['text'] == text and o['command'] == fn(command) and o['state'] == 'disabled' and lay(w_) == ('pack', layout) and U.new(U.id(w_))[1] == ('w', nav_frame), str((o, lay(w_))))
 check('порядок кнопок навигации слева направо: «В начало», «Назад», «Вперед», «В конец»', [U.position(U.id(w_)) for w_, *_ in expected_nav] == sorted(U.position(U.id(w_)) for w_, *_ in expected_nav))
-L = nav_layout()
-check('«Ч» (подчеркнуть) и «КП» (ключевые понятия): команды, цвета, отступы из nav_toggle_layout', bopts('Ч')['command'] == fn('AppWindow._toggle_underline') and bopts('Ч')['font'] == ('Arial', 12, 'bold underline') and blay('Ч') == ('pack', {'padx': L['underline_padx'], 'side': 'left'}) and bopts('КП')['command'] == fn('AppWindow._add_key_concept') and bopts('КП')['bg'] == '#2a6fbf' and blay('КП') == ('pack', {'padx': L['kp_padx'], 'side': 'left'}), str(L))
-check('«Кратко»: переключатель с шириной и отступом из nav_toggle_layout, команда toggle_brief_mode', bopts('Кратко')['command'] == fn('AppWindow.toggle_brief_mode') and bopts('Кратко')['width'] == L['brief_width'] and blay('Кратко') == ('pack', {'padx': L['brief_padx'], 'side': 'left'}))
-check('подсказки («Ч», «КП», «Кратко») подключены (события наведения привязаны)', all('<Enter>' in [a[0] for m, a, k in U.calls(btn(t), 'bind')] for t in ('Ч', 'КП', 'Кратко')))
+check('«КП» (ключевые понятия): команда, цвет, в первой строке слева', bopts('КП')['command'] == fn('AppWindow._add_key_concept') and bopts('КП')['bg'] == '#2a6fbf' and blay('КП') == ('pack', {'padx': (80, 0), 'side': 'left'}))
+check('«Ч» (подчеркнуть) — первая кнопка второй строки, подчёркнутый шрифт', bopts('Ч')['command'] == fn('AppWindow._toggle_underline') and bopts('Ч')['font'] == ('Arial', 12, 'bold underline') and blay('Ч') == ('pack', {'padx': (0, 4), 'side': 'left'}))
+check('вторая строка слева: «Ч», «A+», «Цвет», «Мысль» — по порядку', [U.position(btn(t)) for t in ('Ч', 'A+', 'Цвет', 'Мысль')] == sorted(U.position(btn(t)) for t in ('Ч', 'A+', 'Цвет', 'Мысль')))
+all_ids = U.find('Button', text='Все'); mode_all = [i for i in all_ids if U.layout(i) == ('pack', {'padx': (4, 0), 'side': 'right'})]
+check('справа: «Все», «Кратко», «Отметки» — кнопки режимов показа, пакуются справа налево (видны слева направо)', len(mode_all) == 1 and all(blay(t) == ('pack', {'padx': (4, 0), 'side': 'right'}) for t in ('Кратко', 'Отметки')) and U.position(btn('Отметки')) < U.position(btn('Кратко')) < U.position(mode_all[0]))
+check('подсказки («Ч», «КП», «Кратко») подключены') if False else check('подсказки («Ч», «КП», «Кратко») подключены (события наведения привязаны)', all('<Enter>' in [a[0] for m, a, k in U.calls(btn(t), 'bind')] for t in ('Ч', 'КП', 'Кратко')))
 check('«−В»: кнопка создана, но НЕ упакована (показывает и прячет её окно «Совпадения» вместе с кнопкой 3D/2D)', U.new(btn('−В'))[2]['command'] == fn('AppWindow.toggle_word_variations') and U.layout(btn('−В')) is None and '<Enter>' in [a[0] for m, a, k in U.calls(btn('−В'), 'bind')])
 # ===================== F. центр: окна результатов =====================
 rp = win.results_paned
