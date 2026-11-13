@@ -7,7 +7,7 @@ import subprocess
 import re
 from abc import ABC
 from .word_panel import WordPanel
-from config import CONFIG_FILE, CONSPECT_FILE, MARKS_DB_FILE, KEY_CONCEPTS_FILE, save_config
+from config import CONFIG_FILE, CONSPECT_FILE, MARKS_DB_FILE, KEY_CONCEPTS_FILE, DIARY_FILE, SYNC_FOLDER_FILE, SYNC_BASE_DIR, save_config
 import stats_logger
 from services import dialogs
 from services.index_manager import IndexManager
@@ -20,6 +20,7 @@ from ui.file_merger_dialog import open_file_merger_dialog
 from services.numerator import NumeratorController
 from ui.numerator_dialog import show_numerator_dialog
 from ui.tooltip import ToolTip
+from ui.layer_bar import LayerBar
 from services.marks import MarksStore, export_marks_docx
 from utils.password import check_password, make_password_record
 from utils import key_concepts
@@ -198,7 +199,9 @@ class AppWindow(ABC):
         # Подчёркнутые фрагменты ("Ч", services/marks.py): файл базы открывается
         # при первом обращении, так что недоступная папка не мешает запуску.
         self.marks_store = MarksStore(MARKS_DB_FILE)
+        self._ensure_diary()
         self.results_renderer.marks_store = self.marks_store
+        self.results_renderer.note_click = lambda nid: self.layer_bar.on_note_clicked(nid)
         self.results_renderer_2 = ResultsRenderer(self.result_text_2, label_widget=self.results_bottom_label)
         self.results_renderer_2.font_size = self.font_size
 
@@ -232,6 +235,7 @@ class AppWindow(ABC):
             index_display_map=self.index_manager.index_display_map,
             update_index_list_callback=self.update_index_list
         )
+        self.file_manager.save_config_callback = lambda: self.config.save()
         self.search_controller = SearchController(
             engine=self.engine,
             config=self.config,
@@ -295,6 +299,8 @@ class AppWindow(ABC):
         self.settings_menu = tk.Menu(self.btn_settings, tearoff=0, font=('Arial', 12))
         self.settings_menu.add_command(label="Конфигурация", command=self.open_config)
         self.settings_menu.add_command(label="Экспорт подчеркнутых", command=self.export_underlined)
+        self.settings_menu.add_command(label="Папка синхронизации…", command=self.choose_sync_folder)
+        self.settings_menu.add_command(label="Синхронизировать с телефоном", command=self.sync_with_phone)
         self.settings_menu.add_command(label="Сменить пароль", command=self.change_password_dialog)
         # "Выбор движка" — сам список движков (пункты меню) заполняет
         # MainWindow, здесь только заготовка подменю (аналогично тому, как
@@ -371,6 +377,8 @@ class AppWindow(ABC):
         center_frame = ttk.Frame(main_paned)
         main_paned.add(center_frame, weight=4)
         self._build_nav_bar(center_frame)
+        self.layer_bar = LayerBar(self)
+        self.layer_bar.build(center_frame)
         self._build_results_area(center_frame)
 
     def _build_nav_bar(self, center_frame):
@@ -974,6 +982,105 @@ class AppWindow(ABC):
         elif status == 'removed':
             self._update_log_field("Подчёркивание снято")
 
+    def _sync_folder(self):
+        try:
+            with open(SYNC_FOLDER_FILE, 'r', encoding='utf-8') as f:
+                return f.read().strip()
+        except OSError:
+            return ''
+
+    def choose_sync_folder(self):
+        """Настройки → "Папка синхронизации…": папка Google Диска (та же, что выбрана на телефоне)."""
+        from tkinter import filedialog
+        path = filedialog.askdirectory(title="Папка синхронизации (Google Диск)", initialdir=self._sync_folder() or None)
+        if not path:
+            return
+        with open(SYNC_FOLDER_FILE, 'w', encoding='utf-8') as f:
+            f.write(path)
+        messagebox.showinfo("Синхронизация", f"Папка выбрана:\n{path}\n\nТеперь: Настройки → Синхронизировать с телефоном.")
+
+    def _ensure_diary(self):
+        """Дневник DB/dnev.txt: при первом запуске создаётся пустым (если папки или файла нет)."""
+        try:
+            os.makedirs(os.path.dirname(DIARY_FILE), exist_ok=True)
+            if not os.path.exists(DIARY_FILE):
+                open(DIARY_FILE, 'ab').close()
+        except OSError as e:
+            print(f"⚠️ Не удалось создать дневник: {e}")
+
+    def sync_with_phone(self):
+        """Настройки → "Синхронизировать с телефоном": только вручную. Подчёркивания (включая снятие), конспект и дневник
+           сливаются с файлами папки Google Диска; тот же обмен делает кнопка в Синева Mobile. Идёт в фоне, пока
+           открыто окно «Синхронизация» (оно не даёт работать дальше); по окончании — итог в том же окне."""
+        import threading
+        from services import sync_folder
+        if getattr(self, '_sync_win', None) is not None:
+            return
+        folder = self._sync_folder()
+        if not folder:
+            messagebox.showinfo("Синхронизация", "Сначала выберите папку: Настройки → Папка синхронизации…")
+            return
+        self._ensure_diary()
+        win = tk.Toplevel(self.root)
+        win.title("Синхронизация")
+        win.transient(self.root)
+        win.protocol("WM_DELETE_WINDOW", lambda: None)            # пока идёт обмен, закрыть нельзя
+        label = tk.Label(win, text="Идёт синхронизация…\nПодождите, не закрывайте программу.", padx=30, pady=18,
+                         font=("Segoe UI", 11))
+        label.pack()
+        bar = ttk.Progressbar(win, mode='indeterminate', length=260)
+        bar.pack(padx=20, pady=(0, 12))
+        bar.start(12)
+        button = tk.Button(win, text="Готово", state='disabled', width=12, command=lambda: self._sync_close())
+        button.pack(pady=(0, 14))
+        self._sync_win = win
+        try:
+            win.grab_set()
+        except Exception:
+            pass
+        box = {}
+
+        def work():
+            try:
+                box['rep'] = sync_folder.sync_with_folder(folder, self.marks_store, CONSPECT_FILE, SYNC_BASE_DIR, DIARY_FILE)
+            except Exception as e:
+                box['err'] = e
+
+        thread = threading.Thread(target=work, daemon=True)
+        thread.start()
+
+        def poll():
+            if thread.is_alive():
+                self.root.after(150, poll)
+                return
+            bar.stop()
+            if 'err' in box:
+                label.config(text=f"Синхронизация не удалась:\n{box['err']}")
+            else:
+                rep = box['rep']
+                try:
+                    self.results_renderer.apply_marks()
+                except Exception:
+                    pass
+                if rep['texts_changed']:
+                    self.update_text_list()
+                label.config(text=("Синхронизация завершена.\n"
+                                   f"Подчёркиваний: +{rep['marks_added']}, −{rep['marks_removed']}\n"
+                                   f"Размер, цвет, мысли: +{rep['extra_added']}, −{rep['extra_removed']}\n"
+                                   f"Файлов обновлено здесь: {len(rep['texts_changed'])}, в папке: {len(rep['texts_pushed'])}"))
+            button.config(state='normal')
+
+        self.root.after(150, poll)
+
+    def _sync_close(self):
+        win, self._sync_win = getattr(self, '_sync_win', None), None
+        if win is not None:
+            try:
+                win.grab_release()
+            except Exception:
+                pass
+            win.destroy()
+
     def export_underlined(self):
         """Настройки → "Экспорт подчеркнутых": все подчёркнутые фрагменты — одним
            документом Word в папку DB (по разделу на файл-источник, подчёркнутое
@@ -1476,7 +1583,7 @@ class AppWindow(ABC):
                 initial_output_dir=output_dir,
                 on_dirs_changed=self._remember_merge_dirs,
                 on_merged=self._on_base_merged,
-                on_files_moved=lambda paths: self.update_text_list(),
+                on_files_moved=self.file_manager.on_books_copied,
             )
         except Exception as e:
             messagebox.showerror("Ошибка", f"Не удалось открыть окно сборки базы:\n{e}")
