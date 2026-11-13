@@ -186,6 +186,14 @@ class SearchController:
             self._display_page()
         return self.brief_mode
 
+    def toggle_marks_only(self):
+        """Режим «только отмеченное»: вместо текста топиков — одни подчёркнутые места, места с крупным шрифтом
+           и цветом и слова с мыслями (склеены « … »). Работает вместе с «Кратко»/«Всё» (отмеченное главнее)."""
+        self.renderer.marks_only = not self.renderer.marks_only
+        if not self.is_viewing_file:
+            self._display_page()
+        return self.renderer.marks_only
+
     # ---------- Режим просмотра одного файла ("**") ----------
     BROWSE_QUERY = '**'
     BROWSE_EXTENSIONS = ('.txt', '.docx')

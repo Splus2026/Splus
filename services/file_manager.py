@@ -8,6 +8,7 @@ import tkinter as tk
 from services.dialogs import messagebox
 import stats_logger
 from utils.text_processing import read_text_file, make_safe_index_name
+from utils import mconfig
 from utils.excel_processing import read_excel_as_text
 
 # Подпись файла в списке: "имя.расширение", затем, если файл описан в настройках, " (алиас)". Имя всегда
@@ -43,6 +44,58 @@ class FileManager:
         # Подпись в списке -> (подпапка, имя файла): заполняется при обновлении списка, по ней выбор определяется
         # точно, без разбора текста подписи.
         self._listed_entries = {}
+        # Строка mconfig внутри книги (первая строка; см. utils/mconfig.py): сохранение настроек после её чтения
+        # и запоминание уже просмотренных файлов (путь -> время изменения), чтобы не читать книги при каждом обновлении списка.
+        self.save_config_callback = None
+        self._mconfig_seen = {}
+
+    def apply_book_configs(self, paths, override=False):
+        """Читает первую строку книг (mconfig="файл = Название, N2000") и вносит название и разделитель в
+           настройки ([Bases] mconfig.ini) и интерфейс. override=False — только для книг, которых в настройках
+           ещё нет (обычное обновление списка; ничего не затирает); True — для только что подключённых книг:
+           строка в книге главнее. Возвращает [(имя файла, название, разделитель)] изменённых записей."""
+        changed, problems = [], []
+        for path in paths:
+            if not str(path).lower().endswith(('.txt', '.docx')):
+                continue
+            base = os.path.basename(path)
+            try:
+                stamp = os.path.getmtime(path)
+            except OSError:
+                continue
+            if not override and (base in self.config_dict or self._mconfig_seen.get(path) == stamp):
+                continue
+            self._mconfig_seen[path] = stamp
+            cfg, note = mconfig.read(path)
+            if note:
+                problems.append(f"{base}: {note}")
+            if cfg is None:
+                continue
+            display, separator = cfg
+            current = self.config_dict.get(base)
+            if current is not None and (current[0], current[1]) == (display, separator):
+                continue
+            exclude = current[2] if current is not None and len(current) >= 3 else ''
+            self.config_dict[base] = (display, separator, exclude)
+            changed.append((base, display, separator))
+        if changed and self.save_config_callback is not None:
+            try:
+                self.save_config_callback()
+            except Exception as e:
+                problems.append(f"не удалось сохранить настройки: {e}")
+        if changed:
+            names = "; ".join(f"{b} → {d}, {sep}" for b, d, sep in changed[:5]) + (" …" if len(changed) > 5 else "")
+            self.update_status(f"⚙ Настройки книг прочитаны из первой строки: {names}")
+        elif problems:
+            self.update_status("⚠ " + problems[0])
+        return changed
+
+    def on_books_copied(self, paths):
+        """После «Копировать в папку DB»: строки mconfig у новых книг главнее прежних настроек; список обновляется."""
+        try:
+            self.apply_book_configs(paths, override=True)
+        finally:
+            self.update_text_list()
 
     def _scan_text_files(self):
         files = []
@@ -94,6 +147,7 @@ class FileManager:
         if self.text_listbox is None:
             return
         files = self._scan_text_files()
+        self.apply_book_configs([os.path.join(subdir, name) if subdir else name for subdir, name in files])
         self.text_listbox.delete(0, tk.END)
         self._listed_entries = {}
         for subdir, fname in files:
