@@ -21,9 +21,15 @@ DEBUG_LOG = resource_path("index_debug.log")
 
 # Путь к конспекту теперь в папке DB (относительно текущей рабочей директории)
 CONSPECT_FILE = os.path.join("DB", "0_Конспект.txt")
+# Дневник (как в Синева Mobile): создаётся пустым при первом запуске, синхронизируется с телефоном
+DIARY_FILE = os.path.join("DB", "dnev.txt")
 # Подчёркнутые фрагменты (кнопка "Ч", см. services/marks.py): небольшой файл SQLite
 # рядом с mconfig.ini.
 MARKS_DB_FILE = os.path.join(os.path.dirname(CONFIG_FILE), "marks.db")
+# Папка синхронизации с телефоном (Google Диск): путь одной строкой в текстовом файле рядом с mconfig.ini
+SYNC_FOLDER_FILE = os.path.join(os.path.dirname(CONFIG_FILE), "sync_folder.txt")
+# Служебная папка синхронизации: копии файлов «как было при прошлой синхронизации»
+SYNC_BASE_DIR = os.path.join(os.path.dirname(CONFIG_FILE), "sync_base")
 # Словарь ключевых понятий (кнопка "КП", см. utils/key_concepts.py): обычный текстовый файл
 # рядом с mconfig.ini, по слову на строке — его можно править вручную.
 KEY_CONCEPTS_FILE = os.path.join(os.path.dirname(CONFIG_FILE), "key_concepts.txt")
