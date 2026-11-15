@@ -20,7 +20,7 @@ class LayerBar:
            «Ч», крупный шрифт, цвет, свои мысли (слева) и режимы показа «Все/Кратко/Отметки» (справа). Отдельная строка, потому что
            первая занята навигацией, а правая кнопка мыши — под конспект."""
         bar = tk.Frame(center_frame, bg='#d4e8f7')
-        bar.pack(side='top', fill=tk.X, padx=5, pady=(5, 4))
+        bar.pack(side='top', fill=tk.X, padx=5, pady=(3, 4))
         font = ('Arial', 12, 'bold')
         # Левая группа: Ч, A+, Цвет, Мысль — правка отметок.
         self.btn_underline = tk.Button(bar, text="Ч", command=self.w._toggle_underline,

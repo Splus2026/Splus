@@ -63,7 +63,7 @@ check('обе панели «Совпадения» (верхняя и нижн�
 # ===================== E. центр: навигация =====================
 nav_frame = [i for i in U.children(center) if U.new(i)[2].get('bg') == '#d4e8f7'][0]
 layer_frame = [i for i in U.children(center) if U.new(i)[2].get('bg') == '#d4e8f7'][1]
-check('центр: сверху вторая строка кнопок (Ч, A+, …), в середине результаты, внизу полоса навигации (нижняя пакуется первой, чтобы сохранить место)', U.layout(nav_frame) == ('pack', {'fill': 'x', 'padx': 5, 'pady': (0, 5), 'side': 'bottom'}) and U.layout(layer_frame) == ('pack', {'fill': 'x', 'padx': 5, 'pady': (5, 4), 'side': 'top'}) and U.position(nav_frame) < U.position(layer_frame) < U.position(U.id(win.results_paned)))
+check('центр: сверху вторая строка кнопок (Ч, A+, …), в середине результаты, внизу полоса навигации (нижняя пакуется первой, чтобы сохранить место)', U.layout(nav_frame) == ('pack', {'fill': 'x', 'padx': 5, 'pady': (0, 5), 'side': 'bottom'}) and U.layout(layer_frame) == ('pack', {'fill': 'x', 'padx': 5, 'pady': (3, 4), 'side': 'top'}) and U.position(nav_frame) < U.position(layer_frame) < U.position(U.id(win.results_paned)))
 expected_nav = [(win.btn_first, '<< В начало', 'AppWindow.go_to_first_page', {'padx': 3, 'side': 'left'}), (win.btn_back, '◀ Назад', 'AppWindow.page_back', {'padx': (80, 3), 'side': 'left'}),
                 (win.btn_forward, 'Вперед ▶', 'AppWindow.page_forward', {'padx': (3, 80), 'side': 'left'}), (win.btn_last, 'В конец >>', 'AppWindow.go_to_last_page', {'padx': 3, 'side': 'left'})]
 for w_, text, command, layout in expected_nav:

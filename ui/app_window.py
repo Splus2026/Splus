@@ -237,7 +237,7 @@ class AppWindow(ABC):
         """Строит главное окно по зонам: строка поиска, строка статуса (внизу), основная панель из трёх частей —
            слева «Совпадения», в центре навигация и результаты, справа индексы и файлы. Порядок построения важен:
            строка статуса упаковывается ДО основной панели (см. _build_status_row)."""
-        top_frame = ttk.Frame(self.root, padding=10)
+        top_frame = ttk.Frame(self.root, padding=(10, 10, 10, 0))
         top_frame.pack(fill=tk.X)
         self._build_search_row(top_frame)
 
