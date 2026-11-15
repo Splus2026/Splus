@@ -254,5 +254,12 @@ txt = about_info.about_text('1.2.3', (1500, 2), [('FTS5', 2048), ('Manticore', 1
 check('текст «О программе»: версия, дата сборки, книги, индексы и их итог', 'Синева+  1.2.3' in txt and 'Дата сборки: 15.11.2026' in txt and 'Книги: 1,5 КБ (2 файл.)' in txt and 'Индексы FTS5: 2,0 КБ' in txt and 'Индексы всего: 3,0 КБ' in txt, txt)
 check('без индексов — «пока нет»; дата сборки по файлу', 'Индексы: пока нет' in about_info.about_text('1', (0, 0), [], '') and about_info.build_date(executable=os.path.join(d, 'a.bin')) != '' and about_info.build_date(executable=os.path.join(d, 'нет')) == '')
 
+from utils import mconfig as _mc
+_d = tempfile.mkdtemp()
+for _enc in ('utf-8', 'cp1251', 'utf-8-sig'):
+    _p = os.path.join(_d, 'dp.txt')
+    open(_p, 'wb').write(('mconfig="dp.txt= Духовный Путь, Numeric"\r\nтекст\n' * 300).encode(_enc))
+    check(f'mconfig в первой строке читается ({_enc}, файл больше 4 КБ)', _mc.read(_p) == (('Духовный Путь', 'Numeric'), ''), str(_mc.read(_p)))
+
 print(f"\nПроверок: {len(results)}, провалено: {results.count(False)}")
 sys.exit(1 if False in results else 0)

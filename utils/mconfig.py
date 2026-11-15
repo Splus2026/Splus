@@ -46,9 +46,14 @@ def first_line(path: str) -> str:
             return (paras[0] if paras else '').strip()
         with open(path, 'rb') as f:
             head = f.read(4096)
+        if head.startswith(b'\xef\xbb\xbf'):
+            head = head[3:]
+        raw = head.split(b'\n', 1)[0].rstrip(b'\r')           # только первая строка: кодировку выбираем по ней
+        if raw[:2] in (b'\xff\xfe', b'\xfe\xff'):
+            return raw.decode('utf-16', errors='ignore').strip()
         for enc in TEXT_ENCODINGS:
             try:
-                return head.decode(enc, errors='strict' if len(head) < 4096 else 'ignore').lstrip('﻿').split('\n', 1)[0].strip()
+                return raw.decode(enc).strip()
             except UnicodeDecodeError:
                 continue
     except Exception:
