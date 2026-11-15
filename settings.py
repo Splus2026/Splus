@@ -94,6 +94,9 @@ FIELDS = (
     # 1 — после "Редактировать" включается нумератор разбивки (services/numerator.py).
     # Читается как строка, а не как число: опечатка вроде "да" не должна ронять запуск.
     Field('enable_numerator_on_update', 'Settings', 'enable_numerator_on_update', 'flag', False),
+    # 1 — показывать кнопки «Т» (облако тегов), «Ц» (центральные понятия) и «КП» (ключевые понятия);
+    # по умолчанию 0 — кнопки скрыты.
+    Field('show_analysis_buttons', 'Settings', 'show_analysis_buttons', 'flag', False),
     Field('engine_type', 'Engine', 'type', 'str', 'fts5'),
     Field('elastic_host', 'Elastic', 'host', 'str', 'localhost'),
     Field('elastic_port', 'Elastic', 'port', 'str', '9200'),

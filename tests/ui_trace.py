@@ -62,7 +62,7 @@ def load_module_as_ui(name, path):
     m = types.ModuleType('ui.' + name); m.__file__ = path; m.__package__ = 'ui'; sys.modules['ui.' + name] = m
     importlib.machinery.SourceFileLoader('ui.' + name, path).exec_module(m); return m
 
-def build(module, engine_type='manticore', workdir=None):
+def build(module, engine_type='manticore', workdir=None, show_analysis=False):
     """Строит настоящее окно AppWindow из module под подставным tkinter и возвращает UITrace. Всё, что окно пишет на диск —
        во временную папку."""
     import tkinter as tk
@@ -89,6 +89,8 @@ def build(module, engine_type='manticore', workdir=None):
     tk.Widget.__init__ = traced_init; tk.Widget.config = traced_config; tk.Widget.configure = traced_config; tk.Widget.__getattr__ = traced_getattr
     try:
         module.messagebox = _Box(); vc.messagebox = _Box()
+        if show_analysis:
+            open(cfgmod.CONFIG_FILE, 'w', encoding='utf-8').write('[Settings]\nshow_analysis_buttons = 1\n')
         settings = Settings.load(cfgmod.CONFIG_FILE); root = tk.Tk()
         win = module.AppWindow(root, _FakeEngine(engine_type), settings)
     finally:

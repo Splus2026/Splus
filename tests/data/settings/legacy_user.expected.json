@@ -122,6 +122,7 @@
  "elastic_index": "documents",
  "elastic_port": "9200",
  "enable_numerator_on_update": false,
+ "show_analysis_buttons": false,
  "engine_params": {
   "db_path": null,
   "debug_log_enabled": false,

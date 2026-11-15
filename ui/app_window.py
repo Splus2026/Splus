@@ -391,7 +391,8 @@ class AppWindow(ABC):
         self.btn_key_concepts = tk.Button(nav_frame, text="КП", command=self._add_key_concept,
                                           font=('Arial', 12, 'bold'), bg='#2a6fbf', fg='white',
                                           padx=6, pady=1)
-        self.btn_key_concepts.pack(side='left', padx=(80, 0))
+        if self.config.get('show_analysis_buttons', False):
+            self.btn_key_concepts.pack(side='left', padx=(80, 0))
         ToolTip(self.btn_key_concepts, "Ключевые понятия")
 
         # "−В/+В" — исключить/вернуть явные словоформы одного и того же
@@ -504,6 +505,7 @@ class AppWindow(ABC):
                                              bg='#d4e8f7', fg='#1a4a7a')
         self.selected_count_label.pack(side='left', padx=(4, 8))
 
+        show_analysis = bool(self.config.get('show_analysis_buttons', False))   # «Т» и «Ц» — по параметру в mconfig.ini
         btn_select_all = tk.Button(header_frame, text="Все", command=self._toggle_select_all,
                                    bg='#4a7a8a', fg='white', font=('Arial', 12, 'bold'), padx=3, pady=1)
         btn_select_all.pack(side='left', padx=5)
@@ -520,7 +522,8 @@ class AppWindow(ABC):
         btn_word_cloud = tk.Button(header_frame, text="Т",
                                    command=self.viz.show_word_cloud_for_selected,
                                    bg='#6a4a8a', fg='white', font=('Arial', 12, 'bold'), padx=3, pady=1)
-        btn_word_cloud.pack(side='left', padx=2)
+        if show_analysis:
+            btn_word_cloud.pack(side='left', padx=2)
         ToolTip(btn_word_cloud, "Облако тегов — самые частые слова отмеченных книг")
 
         # TextRank — тоже не требует векторной модели, только текст; в
@@ -530,7 +533,8 @@ class AppWindow(ABC):
         btn_textrank = tk.Button(header_frame, text="Ц",
                                  command=self.viz.show_textrank_for_selected,
                                  bg='#6a4a8a', fg='white', font=('Arial', 12, 'bold'), padx=3, pady=1)
-        btn_textrank.pack(side='left', padx=2)
+        if show_analysis:
+            btn_textrank.pack(side='left', padx=2)
         ToolTip(btn_textrank, "Центральные понятия — главные слова текста отмеченных книг (TextRank)")
 
         # --- Список индексов с чекбоксами ---

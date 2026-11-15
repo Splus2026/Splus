@@ -22,6 +22,7 @@
  "elastic_index": "docs",
  "elastic_port": "9201",
  "enable_numerator_on_update": true,
+ "show_analysis_buttons": false,
  "engine_params": {
   "db_path": "C:/data/books.db",
   "debug_log_enabled": true,

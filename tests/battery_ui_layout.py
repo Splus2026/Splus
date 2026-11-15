@@ -14,7 +14,8 @@ from tests import ui_trace
 # Структура главного окна: что в какой зоне, в каком порядке упаковано, какие команды и привязки у кнопок, меню, текстовых окон.
 # Окно строится по-настоящему под подставным tkinter, все обращения к виджетам записываются (tests/ui_trace.py) — проверяется то,
 # что пользователь увидит и нажмёт, а не внутреннее устройство метода построения.
-U = ui_trace.build(aw); win = U.win
+U0 = ui_trace.build(aw)   # по умолчанию (show_analysis_buttons = 0)
+U = ui_trace.build(aw, show_analysis=True); win = U.win   # с включённым параметром — проверяются кнопки «Т», «Ц», «КП»
 def opts(widget): return U.new(U.id(widget))[2]
 def lay(widget): return U.layout(U.id(widget))
 def calls(widget, method=None): return U.calls(U.id(widget), method)
@@ -119,5 +120,9 @@ for func, args in list(tk.AFTER_QUEUE):
 check('в конце построения в строку статуса записано «Готов к работе»', win.status_entry._text == 'Готов к работе' and ran >= 1, str(win.status_entry._text))
 U2 = ui_trace.build(aw, 'fts5')
 check('для движка FTS5 список индексов — с выбором одного индекса (single_select)', U2.win.index_check_list.single_select is True)
+_hidden = [e for e in U0.events if e[0] == 'new' and e[2] == 'Button' and dict(e[4]).get('text') in ('Т', 'Ц', 'КП')]
+_packed = {e[1] for e in U0.events if e[0] == 'call' and e[2] == 'pack'}
+check('по умолчанию кнопки «Т», «Ц», «КП» созданы, но не показаны (show_analysis_buttons = 0)', len(_hidden) == 3 and not any(e[1] in _packed for e in _hidden), str(len(_hidden)))
+
 print(f"\nПроверок: {len(results)}, провалено: {results.count(False)}")
 sys.exit(0 if all(results) else 1)
