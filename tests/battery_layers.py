@@ -237,5 +237,22 @@ check('окно слияния: заголовок окна, заголовок 
       'self.root.title("Добавить или собрать файлы книг")' in msrc and 'text="Добавить (собрать части)"' in msrc
       and msrc.index('"📥 Копировать в книги"') < msrc.index('"🚀 Объединить и добавить в книги"') and 'ОБЪЕДИНИТЬ' not in msrc)
 
+# ===================== H. «О программе» =====================
+from services import about_info
+check('format_size: байты, КБ, МБ, ГБ с запятой', [about_info.format_size(x) for x in (0, 900, 1536, 4214381, 5 * 1024 ** 3)] == ['0 Б', '900 Б', '1,5 КБ', '4,0 МБ', '5,0 ГБ'], str([about_info.format_size(x) for x in (0, 900, 1536, 4214381, 5 * 1024 ** 3)]))
+d = tmp(); os.makedirs(os.path.join(d, 'sub')); open(os.path.join(d, 'a.bin'), 'wb').write(b'x' * 1000); open(os.path.join(d, 'sub', 'b.bin'), 'wb').write(b'y' * 500)
+check('dir_size: с вложенными папками; нет папки — 0', about_info.dir_size(d) == 1500 and about_info.dir_size(os.path.join(d, 'нет')) == 0)
+bk = about_info.books_size([('', os.path.join(d, 'a.bin')), (d, 'sub' + os.sep + 'b.bin'), ('', 'нет.txt')])
+check('books_size: сумма и число найденных файлов, отсутствующие пропускаются', bk == (1500, 2), str(bk))
+cwd0 = os.getcwd(); os.chdir(d)
+try:
+    os.makedirs('indicies_fts5'); open('indicies_fts5/x.db', 'wb').write(b'z' * 2048)
+    ix = about_info.index_sizes(types.SimpleNamespace(data_dir=os.path.join(d, 'пусто')))
+finally: os.chdir(cwd0)
+check('index_sizes: показаны только непустые каталоги индексов', ix == [('FTS5', 2048)], str(ix))
+txt = about_info.about_text('1.2.3', (1500, 2), [('FTS5', 2048), ('Manticore', 1024)], '15.11.2026')
+check('текст «О программе»: версия, дата сборки, книги, индексы и их итог', 'Синева+  1.2.3' in txt and 'Дата сборки: 15.11.2026' in txt and 'Книги: 1,5 КБ (2 файл.)' in txt and 'Индексы FTS5: 2,0 КБ' in txt and 'Индексы всего: 3,0 КБ' in txt, txt)
+check('без индексов — «пока нет»; дата сборки по файлу', 'Индексы: пока нет' in about_info.about_text('1', (0, 0), [], '') and about_info.build_date(executable=os.path.join(d, 'a.bin')) != '' and about_info.build_date(executable=os.path.join(d, 'нет')) == '')
+
 print(f"\nПроверок: {len(results)}, провалено: {results.count(False)}")
 sys.exit(1 if False in results else 0)

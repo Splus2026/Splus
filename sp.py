@@ -208,6 +208,9 @@ def main():
 
     root.title(f"Синева+ {APP_VERSION} — {datetime.now().strftime('%d.%m.%Y')}")
 
+    import ui.about_dialog as about_dialog
+    about_dialog.APP_VERSION = APP_VERSION
+
     app = MainWindow(root, engine, config)
 
     ready_time = time.time()

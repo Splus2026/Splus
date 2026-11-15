@@ -21,6 +21,7 @@ from services.numerator import NumeratorController
 from ui.numerator_dialog import show_numerator_dialog
 from ui.tooltip import ToolTip
 from ui.layer_bar import LayerBar
+from ui import about_dialog
 from ui.start_button import StartButton
 from utils.icons import refresh_icon_rows, make_photo
 from services.marks import MarksStore, export_marks_docx
@@ -276,6 +277,7 @@ class AppWindow(ABC):
         self.settings_menu.add_command(label="Папка синхронизации…", command=self.choose_sync_folder)
         self.settings_menu.add_command(label="Синхронизировать с телефоном", command=self.sync_with_phone)
         self.settings_menu.add_command(label="Сменить пароль", command=self.change_password_dialog)
+        self.settings_menu.add_command(label="О программе", command=self.show_about)
         # "Выбор движка" — сам список движков (пункты меню) заполняет
         # MainWindow, здесь только заготовка подменю (аналогично тому, как
         # раньше engine_placeholder заполнялся выпадающим списком).
@@ -350,6 +352,8 @@ class AppWindow(ABC):
         """Центральная часть: полоса навигации по страницам и окна результатов."""
         center_frame = ttk.Frame(main_paned)
         main_paned.add(center_frame, weight=4)
+        # Нижняя полоса (навигация по страницам) пакуется первой — иначе окно результатов заберёт всё место;
+        # сверху — вторая строка кнопок (Ч, A+, …, режимы показа).
         self._build_nav_bar(center_frame)
         self.layer_bar = LayerBar(self)
         self.layer_bar.build(center_frame)
@@ -360,7 +364,7 @@ class AppWindow(ABC):
         # --- Навигация по страницам результатов (перенесена наверх, на уровень
         #     надписей "Совпадения:" и "Индексы:" левой/правой панелей) ---
         nav_frame = tk.Frame(center_frame, bg='#d4e8f7')
-        nav_frame.pack(side='top', fill=tk.X, padx=5, pady=(5, 5))
+        nav_frame.pack(side='bottom', fill=tk.X, padx=5, pady=(0, 5))
 
         self.btn_first = NavButton(nav_frame, text="<< В начало", command=self.go_to_first_page,
                                    font=('Arial', 12, 'bold'), fg='white',
@@ -1151,6 +1155,10 @@ class AppWindow(ABC):
                 self.status_entry.xview_moveto(current + 0.01)
 
     # ---------- Текст справки ----------
+    def show_about(self):
+        """«Настройки → О программе»: версия, дата сборки, размер книг и индексов."""
+        about_dialog.show_about(self.root, self.file_manager, self.engine)
+
     def toggle_readme(self):
         """Кнопка «Помощь» / «На главную»: текст readme.txt в окне результатов и возврат к прежнему."""
         if self.results_renderer.help_shown:
