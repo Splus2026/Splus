@@ -233,10 +233,13 @@ check('подсказки: «A+» — «Крупный текст отметки
       'ToolTip(self.btn_big, "Крупный текст отметки")' in lb_src and 'ToolTip(self.btn_color, "Выделение цветом отметки")' in lb_src and 'ToolTip(self.btn_note, "Добавить мысли")' in lb_src)
 check('кнопка справки: «Помощь» ↔ «На главную» по сигналу отрисовщика', 'help_callback = self.layer_bar.on_help_state' in open(os.path.join(env.ROOT, 'ui/app_window.py'), encoding='utf-8').read() and '"На главную" if shown else "Помощь"' in lb_src)
 msrc = open(os.path.join(env.ROOT, 'ui/file_merger_dialog.py'), encoding='utf-8').read()
-check('окно слияния: заголовок окна, заголовок внутри, кнопки «Копировать в книги» слева и «Объединить и добавить в книги» справа',
-      'self.root.title("Добавить или собрать файлы книг")' in msrc and 'text="Добавить (собрать части)"' in msrc
-      and msrc.index('"📥 Копировать в книги"') < msrc.index('"🚀 Объединить и добавить в книги"') and 'ОБЪЕДИНИТЬ' not in msrc)
-
+check('окно слияния: нет строк «Добавить (собрать части)», «Готов к работе» и «Файлы для объединения»; кнопки «Выбрать файлы/папку»',
+      'self.root.title("Добавить или собрать файлы книг")' in msrc and 'Добавить (собрать части)' not in msrc and 'Готов к работе' not in msrc
+      and 'Файлы для объединения' not in msrc and '"➕ Выбрать файлы"' in msrc and '"➕ Выбрать папку"' in msrc)
+check('окно слияния: «Копировать в Книги» ИЛИ «Собрать базу из частей», затем параметры и «Объединить и добавить в Книги»',
+      msrc.index('"📥 Копировать в Книги"') < msrc.index('text="ИЛИ"') < msrc.index('"🧩 Собрать базу из частей"')
+      < msrc.index('Строка-разделитель между частями:') < msrc.index('Имя файла сборки:') < msrc.index('"🚀 Объединить и добавить в Книги"')
+      and 'text="Выходной файл:"' not in msrc and 'Поле можно очистить' not in msrc and '"📁 Выбрать"' not in msrc and 'Открыть после сборки' in msrc)
 # ===================== H. «О программе» =====================
 from services import about_info
 check('format_size: байты, КБ, МБ, ГБ с запятой', [about_info.format_size(x) for x in (0, 900, 1536, 4214381, 5 * 1024 ** 3)] == ['0 Б', '900 Б', '1,5 КБ', '4,0 МБ', '5,0 ГБ'], str([about_info.format_size(x) for x in (0, 900, 1536, 4214381, 5 * 1024 ** 3)]))

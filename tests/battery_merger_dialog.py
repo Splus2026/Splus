@@ -349,5 +349,14 @@ finally:
     fm.read_source_text = orig_read
 check('и успешно завершается', os.path.exists(os.path.join(out, 'out.txt')) and not dlg.root.destroyed)
 
+# ======================= 15. параметры сборки включаются кнопкой «Собрать базу из частей» =======================
+dlg, mb, fd, rec = make(source=SRC, output='DB')
+opts = dlg._option_widgets
+check('параметры сборки и кнопка запуска сначала недоступны', all(w.cget('state') == 'disabled' for w in opts))
+check('«Копировать в Книги» и «Собрать базу из частей» доступны сразу', dlg.move_btn.cget('state') != 'disabled' and dlg.assemble_btn.cget('state') != 'disabled')
+dlg._enable_assemble()   # то, что вызывает кнопка «Собрать базу из частей»
+check('после «Собрать базу из частей» параметры и кнопка запуска доступны', all(w.cget('state') == 'normal' for w in opts))
+check('имя файла сборки по умолчанию — DB\\out.txt', dlg.output_file.get() == os.path.join('DB', 'out.txt'), dlg.output_file.get())
+
 print(f"\nПроверок: {len(results)}, провалено: {results.count(False)}")
 sys.exit(0 if all(results) else 1)

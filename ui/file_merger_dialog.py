@@ -156,6 +156,18 @@ class FileMergerDialog:
         self.root.geometry(f"{w}x{h}+{x}+{y}")
         self.root.minsize(700, 600)
 
+    def _set_assemble_options(self, enabled: bool):
+        """Параметры сборки (разделитель, формат, имя файла, кнопка запуска) доступны только после выбора
+           «Собрать базу из частей»."""
+        for w in self._option_widgets:
+            w.config(state='normal' if enabled else 'disabled')
+
+    def _enable_assemble(self):
+        if self._is_processing:
+            return
+        self._set_assemble_options(True)
+        self.log("🧩 Сборка базы из частей: задайте параметры и нажмите «Объединить и добавить в Книги»", 'info')
+
     def _check_libraries(self):
         warnings = []
         if not file_merger.pdf_reader_available():
@@ -163,7 +175,7 @@ class FileMergerDialog:
         if not file_merger.docx_available():
             warnings.append("работа с DOCX недоступна (pip install python-docx)")
         if warnings:
-            self.status_label.config(text="⚠️ " + "; ".join(warnings), fg='#c0392b')
+            self.log("⚠️ " + "; ".join(warnings), 'warning')
 
     # ---------- построение окна ----------
 
@@ -176,24 +188,14 @@ class FileMergerDialog:
     def _build_widgets(self):
         root = self.root
 
-        title_frame = tk.Frame(root)
-        title_frame.pack(fill='x', padx=10, pady=(8, 4))
-        tk.Label(title_frame, text="Добавить (собрать части)",
-                 font=('Arial', 15, 'bold'), fg='#2c3e50').pack(side='left')
-        self.status_label = tk.Label(title_frame, text="✅ Готов к работе", font=FONT_SMALL,
-                                     fg='#27ae60', wraplength=430, justify='right')
-        self.status_label.pack(side='right', padx=10)
-
-        # --- выбор файлов ---
+        # --- выбор файлов (окно начинается сразу с ряда кнопок) ---
         file_frame = tk.Frame(root)
-        file_frame.pack(fill='x', padx=10, pady=4)
-        tk.Label(file_frame, text="Файлы для объединения (порядок в списке = порядок в итоговом файле):",
-                 font=FONT_LABEL_BOLD).pack(anchor='w')
+        file_frame.pack(fill='x', padx=10, pady=(8, 4))
         btn_row = tk.Frame(file_frame)
         btn_row.pack(fill='x', pady=4)
         self._file_buttons = [
-            self._button(btn_row, "➕ Добавить файлы", self.add_files, COLOR_ACTION),
-            self._button(btn_row, "➕ Добавить папку", self.add_folder, COLOR_ACTION),
+            self._button(btn_row, "➕ Выбрать файлы", self.add_files, COLOR_ACTION),
+            self._button(btn_row, "➕ Выбрать папку", self.add_folder, COLOR_ACTION),
             self._button(btn_row, "🗑️ Удалить выбранные", self.remove_selected, COLOR_DANGER),
             self._button(btn_row, "🧹 Очистить все", self.clear_all, COLOR_NEUTRAL),
         ]
@@ -217,49 +219,60 @@ class FileMergerDialog:
         self.total_size_label = tk.Label(info_frame, text="Общий размер: 0 байт", font=FONT_LABEL_BOLD)
         self.total_size_label.pack(side='left', padx=10)
 
-        # --- формат результата и "открыть после" ---
-        format_frame = tk.Frame(root)
-        format_frame.pack(fill='x', padx=10, pady=4)
-        tk.Label(format_frame, text="Формат результата:", font=FONT_LABEL_BOLD).pack(side='left', padx=5)
-        for text, value in (("TXT", 'txt'), ("DOCX", 'docx')):
-            tk.Radiobutton(format_frame, text=text, variable=self.output_format, value=value,
-                           font=FONT_LABEL_BOLD, command=self._on_format_changed).pack(side='left', padx=10)
-        tk.Checkbutton(format_frame, text="📂 Открыть объединённый файл", variable=self.open_after_merge,
-                       font=FONT_LABEL_BOLD).pack(side='right', padx=20)
+        # --- два варианта действия: «Копировать в Книги» ИЛИ «Собрать базу из частей» ---
+        choice_frame = tk.Frame(root)
+        choice_frame.pack(fill='x', padx=10, pady=(8, 4))
+        choice_inner = tk.Frame(choice_frame)
+        choice_inner.pack(expand=True)
+        self.move_btn = tk.Button(choice_inner, text="📥 Копировать в Книги", command=self.move_to_db,
+                                  bg=COLOR_NEUTRAL, fg='white', font=FONT_BUTTON, padx=20, pady=8)
+        self.move_btn.pack(side='left')
+        tk.Label(choice_inner, text="ИЛИ", font=FONT_LABEL_BOLD, fg='#2c3e50').pack(side='left', padx=14)
+        self.assemble_btn = tk.Button(choice_inner, text="🧩 Собрать базу из частей", command=self._enable_assemble,
+                                      bg=COLOR_ACTION, fg='white', font=FONT_BUTTON, padx=20, pady=8)
+        self.assemble_btn.pack(side='left')
+        self._file_buttons.append(self.move_btn)   # блокируются на время склейки вместе с остальными
+        self._file_buttons.append(self.assemble_btn)
 
-        # --- строка-разделитель ---
+        # --- параметры сборки (доступны после выбора «Собрать базу из частей») ---
         sep_frame = tk.Frame(root)
         sep_frame.pack(fill='x', padx=10, pady=(6, 0))
-        tk.Label(sep_frame, text="Строка-разделитель между файлами:", font=FONT_LABEL_BOLD).pack(side='left', padx=5)
+        tk.Label(sep_frame, text="Строка-разделитель между частями:", font=FONT_LABEL_BOLD).pack(side='left', padx=5)
         self.separator_entry = tk.Entry(sep_frame, textvariable=self.separator_var, font=FONT_MONO,
                                         relief='solid', bd=1)
         self.separator_entry.pack(side='left', fill='x', expand=True, padx=8)
-        tk.Label(root, text="Поле можно очистить — тогда файлы разделяются просто пустой строкой. "
-                            "В итоговый файл больше ничего не добавляется.",
-                 font=FONT_SMALL, fg='#555555', anchor='w', justify='left',
-                 wraplength=840).pack(fill='x', padx=16, pady=(0, 4))
 
-        # --- выходной файл ---
+        format_frame = tk.Frame(root)
+        format_frame.pack(fill='x', padx=10, pady=4)
+        tk.Label(format_frame, text="Формат результата:", font=FONT_LABEL_BOLD).pack(side='left', padx=5)
+        self._format_radios = []
+        for text, value in (("TXT", 'txt'), ("DOCX", 'docx')):
+            rb = tk.Radiobutton(format_frame, text=text, variable=self.output_format, value=value,
+                                font=FONT_LABEL_BOLD, command=self._on_format_changed)
+            rb.pack(side='left', padx=10)
+            self._format_radios.append(rb)
+
         output_frame = tk.Frame(root)
         output_frame.pack(fill='x', padx=10, pady=4)
-        tk.Label(output_frame, text="Выходной файл:", font=FONT_LABEL_BOLD).pack(side='left', padx=5)
+        tk.Label(output_frame, text="Имя файла сборки:", font=FONT_LABEL_BOLD).pack(side='left', padx=5)
         self.output_entry = tk.Entry(output_frame, textvariable=self.output_file, font=FONT_LABEL,
                                      relief='solid', bd=1)
         self.output_entry.pack(side='left', fill='x', expand=True, padx=8)
-        self._button(output_frame, "📁 Выбрать", self.select_output_file, COLOR_NEUTRAL, padx=5)
+        self.open_check = tk.Checkbutton(output_frame, text="Открыть после сборки", variable=self.open_after_merge,
+                                         font=FONT_LABEL_BOLD)
+        self.open_check.pack(side='left', padx=(8, 5))
 
         # --- запуск, прогресс, журнал ---
         action_frame = tk.Frame(root)
         action_frame.pack(fill='x', padx=10, pady=8)
         action_inner = tk.Frame(action_frame)
         action_inner.pack(expand=True)
-        self.move_btn = tk.Button(action_inner, text="📥 Копировать в книги", command=self.move_to_db,
-                                  bg=COLOR_NEUTRAL, fg='white', font=FONT_BUTTON, padx=20, pady=8)
-        self.move_btn.pack(side='left')
-        self.process_btn = tk.Button(action_inner, text="🚀 Объединить и добавить в книги", command=self.process_files,
+        self.process_btn = tk.Button(action_inner, text="🚀 Объединить и добавить в Книги", command=self.process_files,
                                      bg=COLOR_ACTION, fg='white', font=FONT_BUTTON, padx=30, pady=8)
-        self.process_btn.pack(side='left', padx=(12, 0))
-        self._file_buttons.append(self.move_btn)   # блокируется на время склейки вместе с остальными
+        self.process_btn.pack(side='left')
+        self._option_widgets = [self.separator_entry, self.output_entry, self.open_check,
+                                *self._format_radios, self.process_btn]
+        self._set_assemble_options(False)
 
         self.progress_var = tk.DoubleVar(value=0)
         self.progress_bar = ttk.Progressbar(root, variable=self.progress_var, maximum=100, length=400)
@@ -631,7 +644,7 @@ class FileMergerDialog:
 
     def _finish_processing(self):
         self._is_processing = False
-        self.process_btn.config(text="🚀 Объединить и добавить в книги", state='normal')
+        self.process_btn.config(text="🚀 Объединить и добавить в Книги", state='normal')
         for btn in self._file_buttons:
             btn.config(state='normal')
 
