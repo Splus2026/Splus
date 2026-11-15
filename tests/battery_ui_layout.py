@@ -73,7 +73,7 @@ check('«Ч» (подчеркнуть) — первая кнопка второ�
 check('вторая строка слева: «Ч», «A+», «Цвет», «Мысли» — по порядку', [U.position(btn(t)) for t in ('Ч', 'A+', 'Цвет', 'Мысли')] == sorted(U.position(btn(t)) for t in ('Ч', 'A+', 'Цвет', 'Мысли')))
 
 check('справа: «Полный», «Краткий», «Отметки» — режимы показа, пакуются справа налево (видны слева направо)', all(blay(t) == ('pack', {'padx': (4, 0), 'side': 'right'}) for t in ('Полный', 'Краткий', 'Отметки')) and U.position(btn('Отметки')) < U.position(btn('Краткий')) < U.position(btn('Полный')))
-check('«Помощь» посередине второй строки: после «Мысли», до «Полный», открывает справку', blay('Помощь') == ('pack', {'expand': True, 'side': 'left'}) and bopts('Помощь')['command'] == fn('AppWindow.show_readme') and U.position(btn('Мысли')) < U.position(btn('Помощь')))
+check('«Помощь» посередине второй строки: после «Мысли», до «Полный», открывает справку', blay('Помощь') == ('pack', {'expand': True, 'side': 'left'}) and bopts('Помощь')['command'] == fn('AppWindow.toggle_readme') and U.position(btn('Мысли')) < U.position(btn('Помощь')))
 check('подсказки («Ч», «КП», «Краткий», «Помощь») подключены (события наведения привязаны)', all('<Enter>' in [a[0] for m, a, k in U.calls(btn(t), 'bind')] for t in ('Ч', 'КП', 'Краткий', 'Помощь')))
 check('«−В»: кнопка создана, но НЕ упакована (показывает и прячет её окно «Совпадения» вместе с кнопкой 3D/2D)', U.new(btn('−В'))[2]['command'] == fn('AppWindow.toggle_word_variations') and U.layout(btn('−В')) is None and '<Enter>' in [a[0] for m, a, k in U.calls(btn('−В'), 'bind')])
 # ===================== F. центр: окна результатов =====================

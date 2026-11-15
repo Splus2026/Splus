@@ -213,6 +213,13 @@ class Overlay:
 w, r = make(); ov = Overlay(); r.start_overlay = ov
 r.render_help_text(); check('пустое окно: поверх показана кнопка «Добавить книги», текста справки нет', ov.on and w.text == '')
 r.render_readme(); check('«Помощь»: кнопка скрыта, показан текст readme (или сообщение о его отсутствии)', not ov.on and len(w.text) > 10)
+states = []; r.help_callback = states.append
+r.render_help_text(); page(r, tps(*T)); before = w.text; states.clear()
+r.render_readme(); check('справка: сообщено «включена», текст сменился', states == [True] and w.text != before and r.help_shown)
+r.leave_readme(); check('«На главную»: вернулась страница результатов, справка выключена', states == [True, False] and w.text == before and not r.help_shown)
+r.render_help_text(); r.render_readme(); r.leave_readme(); check('«На главную» без результатов — стартовый экран с кнопкой', ov.on and w.text == '' and not r.help_shown)
+r.render_readme(); page(r, tps(*T)); check('новая отрисовка во время справки тоже выключает её', not r.help_shown and states[-1] is False)
+r.help_callback = None
 r.render_help_text(); page(r, tps(*T)); check('страница результатов скрывает стартовую кнопку', not ov.on and 'Alpha' in w.text)
 r.render_help_text(); r.render_error('ошибка'); check('сообщение об ошибке скрывает стартовую кнопку', not ov.on)
 f_small, _, _ = scaled_metrics(500, 300); f_big, px, py = scaled_metrics(1600, 900)
@@ -221,6 +228,10 @@ rows = refresh_icon_rows(26)
 cells = [c for row in rows for c in row]
 check('пиктограмма обновления: 26×26, цвета фона кнопки и белый, края сглажены', len(rows) == 26 and all(len(x) == 26 for x in rows) and '#6a4a8a' in cells and '#ffffff' in cells and len(set(cells)) > 4)
 check('пиктограмма — круг с просветом: центр и угол фоновые, на кольце есть белые', rows[13][13] == '#6a4a8a' and rows[0][0] == '#6a4a8a' and rows[13][3] != '#6a4a8a')
+lb_src = open(os.path.join(env.ROOT, 'ui/layer_bar.py'), encoding='utf-8').read()
+check('подсказки: «A+» — «Крупный текст отметки», «Цвет» — «Выделение цветом отметки», «Мысли» — «Добавить мысли»',
+      'ToolTip(self.btn_big, "Крупный текст отметки")' in lb_src and 'ToolTip(self.btn_color, "Выделение цветом отметки")' in lb_src and 'ToolTip(self.btn_note, "Добавить мысли")' in lb_src)
+check('кнопка справки: «Помощь» ↔ «На главную» по сигналу отрисовщика', 'help_callback = self.layer_bar.on_help_state' in open(os.path.join(env.ROOT, 'ui/app_window.py'), encoding='utf-8').read() and '"На главную" if shown else "Помощь"' in lb_src)
 msrc = open(os.path.join(env.ROOT, 'ui/file_merger_dialog.py'), encoding='utf-8').read()
 check('окно слияния: заголовок окна, заголовок внутри, кнопки «Копировать в книги» слева и «Объединить и добавить в книги» справа',
       'self.root.title("Добавить или собрать файлы книг")' in msrc and 'text="Добавить (собрать части)"' in msrc

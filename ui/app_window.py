@@ -168,6 +168,7 @@ class AppWindow(ABC):
         self.results_renderer.font_size = self.font_size
         # Крупная кнопка «Добавить книги» по центру пустого окна результатов.
         self.results_renderer.start_overlay = StartButton(self.result_text, self.open_file_merger)
+        self.results_renderer.help_callback = self.layer_bar.on_help_state   # «Помощь» ↔ «На главную»
         # Подчёркнутые фрагменты ("Ч", services/marks.py): файл базы открывается
         # при первом обращении, так что недоступная папка не мешает запуску.
         self.marks_store = MarksStore(MARKS_DB_FILE)
@@ -1150,9 +1151,12 @@ class AppWindow(ABC):
                 self.status_entry.xview_moveto(current + 0.01)
 
     # ---------- Текст справки ----------
-    def show_readme(self):
-        """Кнопка «Помощь»: текст readme.txt в окне результатов."""
-        self.results_renderer.render_readme()
+    def toggle_readme(self):
+        """Кнопка «Помощь» / «На главную»: текст readme.txt в окне результатов и возврат к прежнему."""
+        if self.results_renderer.help_shown:
+            self.results_renderer.leave_readme()
+        else:
+            self.results_renderer.render_readme()
 
     def _show_help_text(self):
         self.results_renderer.render_help_text()

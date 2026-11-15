@@ -31,15 +31,15 @@ class LayerBar:
         self.btn_big = tk.Button(bar, text="A+", command=lambda: self.style_selection('big'),
                                  font=('Arial', 13, 'bold'), bg='#6a4a8a', fg='white', padx=8, pady=1)
         self.btn_big.pack(side='left', padx=4)
-        ToolTip(self.btn_big, "Крупный шрифт (внутри подчёркнутого)")
+        ToolTip(self.btn_big, "Крупный текст отметки")
         self.btn_color = tk.Button(bar, text="Цвет", command=lambda: self.style_selection('color'),
                                    font=font, bg='#8a00a6', fg='white', padx=6, pady=1)
         self.btn_color.pack(side='left', padx=4)
-        ToolTip(self.btn_color, "Цветом (внутри подчёркнутого)")
+        ToolTip(self.btn_color, "Выделение цветом отметки")
         self.btn_note = tk.Button(bar, text="Мысли", command=self.edit_note_for_selection,
                                   font=font, bg='#1a6a3a', fg='white', padx=6, pady=1)
         self.btn_note.pack(side='left', padx=4)
-        ToolTip(self.btn_note, "Своя мысль к выделенному")
+        ToolTip(self.btn_note, "Добавить мысли")
         # Правая группа: что показывать — Все / Кратко / Отметки (пакуются справа налево, видны слева направо).
         self.mode_buttons = {}
         for mode, text, tip in (('marks', "Отметки", "Только подчёркнутое, выделенное и мысли"),
@@ -52,10 +52,10 @@ class LayerBar:
             self.mode_buttons[mode] = btn
         self.mode_buttons['all'].config(bg=self.MODE_ON, relief='sunken')
         # «Помощь» (текст readme.txt) — посередине между левой и правой группами: пакуется последней и занимает остаток строки.
-        self.btn_help = tk.Button(bar, text="Помощь", command=self.w.show_readme,
+        self.btn_help = tk.Button(bar, text="Помощь", command=self.w.toggle_readme,
                                   font=font, bg='#2a6fbf', fg='white', padx=10, pady=1)
         self.btn_help.pack(side='left', expand=True)
-        ToolTip(self.btn_help, "Справка по программе")
+        ToolTip(self.btn_help, "Справка по программе (повторно — вернуться на главную)")
 
     def layer_blocked(self):
         """True (и подсказка), если слои сейчас недоступны: разделение окна или показано не окно результатов."""
@@ -141,6 +141,10 @@ class LayerBar:
                 self.w.results_renderer.edit_note(nid, answer[1])
         except Exception as e:
             messagebox.showerror("Мысль", f"Не удалось сохранить:\n{e}")
+
+    def on_help_state(self, shown):
+        """Пока показана справка, кнопка называется «На главную»."""
+        self.btn_help.config(text="На главную" if shown else "Помощь")
 
     def set_mode(self, mode):
         """Кнопки «Все» / «Кратко» / «Отметки»: что показывать в окне результатов."""

@@ -39,6 +39,9 @@ class ResultsRenderer:
         # Слои поверх подчёркнутого (как в Синеве Mobile): крупный шрифт, цвет и свои мысли.
         self.font_step = 2          # на сколько пунктов «крупный» шрифт больше обычного
         self.marks_only = False     # режим «только отмеченное» (подчёркнутое, выделенное, мысли): правка слоёв выключена
+        self.help_shown = False     # сейчас в окне текст справки (readme.txt)
+        self.help_callback = None   # callback(bool): справка включилась/выключилась (кнопка «Помощь» ↔ «На главную»)
+        self._help_return = None    # (как перерисовать прежнее, положение прокрутки) — куда вернуться из справки
         self.start_overlay = None   # крупная кнопка «Добавить книги» по центру (ui/start_button.py)
         self.note_click = None      # callback(note_id): клик по тексту мысли
         self._replay = None         # как заново нарисовать то, что на экране (после добавления/правки мысли)
@@ -163,7 +166,15 @@ class ResultsRenderer:
             self.label_widget.config(text=text)
 
     # ---------- Стартовый экран и справка ----------
+    def _set_help(self, shown):
+        if shown != self.help_shown:
+            self.help_shown = shown
+            if self.help_callback is not None:
+                self.help_callback(shown)
+
     def _set_start(self, visible):
+        if visible is False:
+            self._set_help(False)      # любая другая отрисовка закрывает справку (render_readme включает её заново)
         if self.start_overlay is not None:
             (self.start_overlay.show if visible else self.start_overlay.hide)()
 
@@ -175,10 +186,17 @@ class ResultsRenderer:
         self.result_text.delete(1.0, tk.END)
         self.regions = []
         self._replay = None
+        self._set_help(False)
         self._set_start(True)
 
     def render_readme(self):
-        """Показывает содержимое readme.txt (кнопка «Помощь»)."""
+        """Показывает содержимое readme.txt (кнопка «Помощь»; повторное нажатие «На главную» — leave_readme())."""
+        if not self.help_shown:
+            try:
+                pos = self.result_text.yview()[0]
+            except Exception:
+                pos = None
+            self._help_return = (self._replay, pos)
         self.result_text.config(state='normal')
         self.result_text.update_idletasks()
         self.result_text.delete(1.0, tk.END)
@@ -193,9 +211,25 @@ class ResultsRenderer:
             content = "Файл справки (readme.txt) не найден."
         except Exception as e:
             content = f"Ошибка чтения файла справки: {e}"
+        self._set_help(True)
         self.result_text.insert(tk.END, content, ("help_text",))
         self.result_text.tag_config("help_text", justify='left', font=('Arial', self.font_size), foreground='#1a4a7a')
         self.result_text.config(state='normal')
+
+    def leave_readme(self):
+        """«На главную»: возвращает то, что было до справки (страницу результатов), а если там ничего не было —
+           стартовый экран."""
+        replay, pos = self._help_return or (None, None)
+        self._help_return = None
+        if replay is None:
+            self.render_help_text()
+            return
+        replay()
+        if pos is not None:
+            try:
+                self.result_text.yview_moveto(pos)
+            except Exception:
+                pass
 
     # ---------- Страница результатов поиска ----------
     def render_results_page(self, topics, page_num, total_count,

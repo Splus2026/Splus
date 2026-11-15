@@ -74,13 +74,13 @@ if sp_ok:
         try: return sp.show_authorization_dialog(par)
         except SystemExit: return 'exit'
     rec = {'password_hash': h, 'password_salt': s}
-    check('вход: прежний пароль (ДДММ), сменного нет', attempt('0710', {}) is True)
-    check('вход: неверный пароль — сообщение и выход', attempt('9999', {}) == 'exit' and any('Неверный пароль' in m for m in shown))
+    n0 = len(tk.CREATED); r0 = attempt('9999', {})
+    check('вход по умолчанию (сменный пароль не задан): без пароля, окно не показывается', r0 is True and not any(getattr(w, 'options', {}).get('text') == 'OK' for w in tk.CREATED[n0:]))
+    check('вход: сменный пароль задан, неверный пароль — сообщение и выход', attempt('9999', rec) == 'exit' and any('Неверный пароль' in m for m in shown))
     check('вход: сменный пароль задан, ПРЕЖНИЙ ДДММ всё равно работает', attempt('0710', rec) is True)
     check('вход: сменный пароль работает', attempt('мой пароль', rec) is True)
     check('вход: неверный при заданном сменном — выход', attempt('9999', rec) == 'exit')
-    check('вход: конфигурация не читается — остаётся прежний пароль, а не блокировка', attempt('0710', OSError("битый ini")) is True)
-    check('вход: конфигурация не читается и пароль неверный — выход', attempt('9999', OSError("битый ini")) == 'exit')
+    check('вход: конфигурация не читается — не блокировка (как без сменного пароля)', attempt('9999', OSError("битый ini")) is True)
 
 # ===== D. диалог смены пароля =====
 import ui.app_window as aw

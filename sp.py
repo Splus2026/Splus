@@ -91,6 +91,11 @@ def show_authorization_dialog(parent):
         # Конфигурация не читается — остаётся прежний пароль, а не блокировка входа.
         stored_hash, salt = '', ''
 
+    if not stored_hash:
+        # Сменный пароль не задан («Настройки → Сменить пароль») — по умолчанию вход без пароля:
+        # прежний пароль (день и месяц, ДДММ) подставлять некому, окно не показываем.
+        return True
+
     dialog = tk.Toplevel(parent)
     dialog.title("Авторизация")
     dialog.geometry("500x200")
