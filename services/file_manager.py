@@ -91,7 +91,7 @@ class FileManager:
         return changed
 
     def on_books_copied(self, paths):
-        """После «Копировать в папку DB»: строки mconfig у новых книг главнее прежних настроек; список обновляется."""
+        """После «Копировать в книги»: строки mconfig у новых книг главнее прежних настроек; список обновляется."""
         try:
             self.apply_book_configs(paths, override=True)
         finally:

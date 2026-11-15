@@ -81,7 +81,7 @@ FIELDS = (
     # services/vector_model_manager.py, _build_training_sentences().
     Field('vector_sentences_before', 'Settings', 'vector_sentences_before', 'int', 7),
     Field('vector_sentences_after', 'Settings', 'vector_sentences_after', 'int', 10),
-    # Окно "Собрать базу": откуда в последний раз выбирали файлы и куда сохраняли.
+    # Окно «Добавить или собрать файлы книг»: откуда в последний раз выбирали файлы и куда сохраняли.
     Field('merge_source_dir', 'Settings', 'merge_source_dir', 'text', ''),
     Field('merge_output_dir', 'Settings', 'merge_output_dir', 'text_or_default', 'DB'),
     # Сменный пароль входа: хеш и соль (utils/password.py). Пусто — только прежний

@@ -1,4 +1,4 @@
-"""Окно кнопки "Собрать базу": склейка нескольких файлов (.txt / .docx / .pdf)
+"""Окно кнопки «Добавить книги» («Добавить или собрать файлы книг»): склейка нескольких файлов (.txt / .docx / .pdf)
    в один. Сделано по образцу окна "Сборка баз/конспектов" (FileMergerApp)
    из прежнего проекта, со следующими отличиями:
 
@@ -75,7 +75,7 @@ def _storage_dir(path: str) -> str:
 class FileMergerDialog:
     def __init__(self, parent, initial_source_dir='', initial_output_dir=DEFAULT_OUTPUT_DIR,
                  on_dirs_changed=None, on_merged=None, on_files_moved=None):
-        """on_files_moved(paths) — после кнопки "Копировать в папку DB" (главное окно
+        """on_files_moved(paths) — после кнопки «Копировать в книги» (главное окно
            обновляет список файлов справа внизу).
            on_dirs_changed(source_dir=None, output_dir=None) — вызывается,
            когда нужно запомнить папку (None — этот параметр не менялся).
@@ -96,7 +96,7 @@ class FileMergerDialog:
         self._events = queue.Queue()  # рабочий поток -> главный поток
 
         self.root = tk.Toplevel(parent)
-        self.root.title("Собрать базу — объединение файлов")
+        self.root.title("Добавить или собрать файлы книг")
         self.root.transient(parent)
         self.root.protocol('WM_DELETE_WINDOW', self._on_close)
 
@@ -178,7 +178,7 @@ class FileMergerDialog:
 
         title_frame = tk.Frame(root)
         title_frame.pack(fill='x', padx=10, pady=(8, 4))
-        tk.Label(title_frame, text="СБОРКА БАЗЫ: ОБЪЕДИНЕНИЕ ФАЙЛОВ",
+        tk.Label(title_frame, text="Добавить (собрать части)",
                  font=('Arial', 15, 'bold'), fg='#2c3e50').pack(side='left')
         self.status_label = tk.Label(title_frame, text="✅ Готов к работе", font=FONT_SMALL,
                                      fg='#27ae60', wraplength=430, justify='right')
@@ -253,12 +253,12 @@ class FileMergerDialog:
         action_frame.pack(fill='x', padx=10, pady=8)
         action_inner = tk.Frame(action_frame)
         action_inner.pack(expand=True)
-        self.process_btn = tk.Button(action_inner, text="🚀 ОБЪЕДИНИТЬ ФАЙЛЫ", command=self.process_files,
-                                     bg=COLOR_ACTION, fg='white', font=FONT_BUTTON, padx=30, pady=8)
-        self.process_btn.pack(side='left')
-        self.move_btn = tk.Button(action_inner, text="📥 Копировать в папку DB", command=self.move_to_db,
+        self.move_btn = tk.Button(action_inner, text="📥 Копировать в книги", command=self.move_to_db,
                                   bg=COLOR_NEUTRAL, fg='white', font=FONT_BUTTON, padx=20, pady=8)
-        self.move_btn.pack(side='left', padx=(12, 0))
+        self.move_btn.pack(side='left')
+        self.process_btn = tk.Button(action_inner, text="🚀 Объединить и добавить в книги", command=self.process_files,
+                                     bg=COLOR_ACTION, fg='white', font=FONT_BUTTON, padx=30, pady=8)
+        self.process_btn.pack(side='left', padx=(12, 0))
         self._file_buttons.append(self.move_btn)   # блокируется на время склейки вместе с остальными
 
         self.progress_var = tk.DoubleVar(value=0)
@@ -631,7 +631,7 @@ class FileMergerDialog:
 
     def _finish_processing(self):
         self._is_processing = False
-        self.process_btn.config(text="🚀 ОБЪЕДИНИТЬ ФАЙЛЫ", state='normal')
+        self.process_btn.config(text="🚀 Объединить и добавить в книги", state='normal')
         for btn in self._file_buttons:
             btn.config(state='normal')
 
@@ -722,6 +722,6 @@ class FileMergerDialog:
 
 def open_file_merger_dialog(parent, initial_source_dir='', initial_output_dir=DEFAULT_OUTPUT_DIR,
                             on_dirs_changed=None, on_merged=None, on_files_moved=None):
-    """Открывает окно "Собрать базу" (модальное; сам вызов не блокирует)."""
+    """Открывает окно «Добавить или собрать файлы книг» (модальное; сам вызов не блокирует)."""
     return FileMergerDialog(parent, initial_source_dir, initial_output_dir,
                             on_dirs_changed, on_merged, on_files_moved)

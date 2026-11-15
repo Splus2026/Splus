@@ -59,9 +59,9 @@ check('первая строка слева направо: первая, наз
       order == ['btn_first', 'btn_back', 'btn_forward', 'btn_last', 'btn_key_concepts'], str(order))
 lsrc = open(os.path.join(env.ROOT, 'ui/layer_bar.py'), encoding='utf-8').read()
 lorder = re.findall(r'self\.(btn_\w+)\.pack\(side=.left.', lsrc)
-check('вторая строка, левая группа: «Ч», «A+», «Цвет», «Мысль»', lorder == ['btn_underline', 'btn_big', 'btn_color', 'btn_note'], str(lorder))
-check('вторая строка, правая группа: «Все», «Кратко», «Отметки» (пакуются справа налево)',
-      re.findall(r"\('(\w+)', \"([^\"]+)\"", lsrc.split('self.mode_buttons = {}')[-1].split('self.mode_buttons[')[0]) == [('marks', 'Отметки'), ('brief', 'Кратко'), ('all', 'Все')] and "btn.pack(side='right'" in lsrc)
+check('вторая строка, левая группа: «Ч», «A+», «Цвет», «Мысли» (+ «Помощь» посередине)', lorder == ['btn_underline', 'btn_big', 'btn_color', 'btn_note', 'btn_help'], str(lorder))
+check('вторая строка, правая группа: «Полный», «Краткий», «Отметки» (пакуются справа налево)',
+      re.findall(r"\('(\w+)', \"([^\"]+)\"", lsrc.split('self.mode_buttons = {}')[-1].split('self.mode_buttons[')[0]) == [('marks', 'Отметки'), ('brief', 'Краткий'), ('all', 'Полный')] and "btn.pack(side='right'" in lsrc)
 check('«Ч» и переключатель «Кратко/Всё» больше не в первой строке', 'btn_underline' not in section and 'btn_brief_toggle' not in src)
 check("«−В/+В» по-прежнему пакуется справа (show_variations_button)", re.search(r"btn_variations_toggle\.pack\(side='right'", src) is not None)
 check('подсказка «Подчеркнуть» у «Ч» на месте', 'ToolTip(self.btn_underline, "Подчеркнуть")' in lsrc)

@@ -12,7 +12,7 @@ class LayerBar:
 
     def __init__(self, window):
         self.w = window
-        self.btn_underline = self.btn_big = self.btn_color = self.btn_note = None
+        self.btn_underline = self.btn_big = self.btn_color = self.btn_note = self.btn_help = None
         self.mode_buttons = {}
 
     def build(self, center_frame):
@@ -36,21 +36,26 @@ class LayerBar:
                                    font=font, bg='#8a00a6', fg='white', padx=6, pady=1)
         self.btn_color.pack(side='left', padx=4)
         ToolTip(self.btn_color, "Цветом (внутри подчёркнутого)")
-        self.btn_note = tk.Button(bar, text="Мысль", command=self.edit_note_for_selection,
+        self.btn_note = tk.Button(bar, text="Мысли", command=self.edit_note_for_selection,
                                   font=font, bg='#1a6a3a', fg='white', padx=6, pady=1)
         self.btn_note.pack(side='left', padx=4)
         ToolTip(self.btn_note, "Своя мысль к выделенному")
         # Правая группа: что показывать — Все / Кратко / Отметки (пакуются справа налево, видны слева направо).
         self.mode_buttons = {}
         for mode, text, tip in (('marks', "Отметки", "Только подчёркнутое, выделенное и мысли"),
-                                ('brief', "Кратко", "Только предложения с подсветками"),
-                                ('all', "Все", "Полный текст")):
+                                ('brief', "Краткий", "Только предложения с подсветками"),
+                                ('all', "Полный", "Полный текст")):
             btn = tk.Button(bar, text=text, command=lambda m=mode: self.set_mode(m),
                             font=font, bg=self.MODE_OFF, fg='white', padx=6, pady=1, width=8)
             btn.pack(side='right', padx=(4, 0))
             ToolTip(btn, tip)
             self.mode_buttons[mode] = btn
         self.mode_buttons['all'].config(bg=self.MODE_ON, relief='sunken')
+        # «Помощь» (текст readme.txt) — посередине между левой и правой группами: пакуется последней и занимает остаток строки.
+        self.btn_help = tk.Button(bar, text="Помощь", command=self.w.show_readme,
+                                  font=font, bg='#2a6fbf', fg='white', padx=10, pady=1)
+        self.btn_help.pack(side='left', expand=True)
+        ToolTip(self.btn_help, "Справка по программе")
 
     def layer_blocked(self):
         """True (и подсказка), если слои сейчас недоступны: разделение окна или показано не окно результатов."""

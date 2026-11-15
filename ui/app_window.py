@@ -21,12 +21,17 @@ from services.numerator import NumeratorController
 from ui.numerator_dialog import show_numerator_dialog
 from ui.tooltip import ToolTip
 from ui.layer_bar import LayerBar
+from ui.start_button import StartButton
+from utils.icons import refresh_icon_rows, make_photo
 from services.marks import MarksStore, export_marks_docx
 from utils.password import check_password, make_password_record
 from utils import key_concepts
 from ui.results_renderer import ResultsRenderer
 from ui.visualization_controller import VisualizationController
 from ui.custom_dialogs import messagebox
+
+
+REFRESH_BG = '#6a4a8a'   # цвет кнопки обновления списка книг
 
 
 class NavButton(tk.Button):
@@ -161,6 +166,8 @@ class AppWindow(ABC):
     def _init_services(self):
         self.results_renderer = ResultsRenderer(self.result_text, label_widget=self.results_top_label)
         self.results_renderer.font_size = self.font_size
+        # Крупная кнопка «Добавить книги» по центру пустого окна результатов.
+        self.results_renderer.start_overlay = StartButton(self.result_text, self.open_file_merger)
         # Подчёркнутые фрагменты ("Ч", services/marks.py): файл базы открывается
         # при первом обращении, так что недоступная папка не мешает запуску.
         self.marks_store = MarksStore(MARKS_DB_FILE)
@@ -262,6 +269,7 @@ class AppWindow(ABC):
                                           font=('Arial', 12, 'bold'), bg='#6a4a8a', fg='white',
                                           padx=3, pady=1, relief='raised', borderwidth=2)
         self.settings_menu = tk.Menu(self.btn_settings, tearoff=0, font=('Arial', 12))
+        self.settings_menu.add_command(label="Добавить книги…", command=self.open_file_merger)
         self.settings_menu.add_command(label="Конфигурация", command=self.open_config)
         self.settings_menu.add_command(label="Экспорт подчеркнутых", command=self.export_underlined)
         self.settings_menu.add_command(label="Папка синхронизации…", command=self.choose_sync_folder)
@@ -457,10 +465,10 @@ class AppWindow(ABC):
         self.result_text_2.bind('<Button-3>', self.append_selection_to_conspect)
 
     def _build_right_panel(self, main_paned):
-        """Правая часть: список индексов, список файлов и кнопки «Редактировать»/«Собрать базу»."""
+        """Правая часть: список индексов, список файлов и кнопки «Редактирование (разбивка) книги» и обновления."""
         # --- Правая панель ---
         # Ширина увеличена до значения, которое умещает самую широкую строку
-        # кнопок целиком (нижнюю — "Собрать базу" + список движков), плюс
+        # кнопок целиком (нижнюю — "Редактирование" + список движков), плюс
         # ещё +5% от ширины окна за счёт центральной панели (по просьбе).
         right_frame = ttk.Frame(main_paned, width=355)
         main_paned.add(right_frame, weight=0)
@@ -535,7 +543,7 @@ class AppWindow(ABC):
 
         header_frame2 = tk.Frame(bottom_right_frame, bg='#d4e8f7')
         header_frame2.pack(fill=tk.X, pady=2)
-        tk.Label(header_frame2, text="Файлы:", font=('Arial', 12, 'bold'),
+        tk.Label(header_frame2, text="Книги:", font=('Arial', 12, 'bold'),
                  bg='#d4e8f7', fg='#1a4a7a').pack(side='left')
         btn_add_index = tk.Button(header_frame2, text="▲ В индекс", command=self._add_to_index,
                                   bg='#6a4a8a', fg='white', font=('Arial', 12, 'bold'), padx=3, pady=1)
@@ -556,37 +564,20 @@ class AppWindow(ABC):
         self.text_listbox.bind('<Button-3>', self._on_text_right_click)
 
     def _build_prepare_buttons(self, right_frame):
-        """Кнопки «Редактировать» и «Собрать базу» внизу правой панели."""
+        """Внизу правой панели: обновление списка и «Редактирование (разбивка) книги».
+           («Добавить книги» вынесена крупной кнопкой в центр окна результатов — ui/start_button.py.)"""
         prepare_frame = tk.Frame(right_frame, bg='#d4e8f7')
         prepare_frame.pack(fill=tk.X, padx=5, pady=5)
-        # Пиктограмма обновления крупнее, а сама кнопка остаётся прежнего размера: кнопка лежит в рамке
-        # фиксированного размера (ширина — в 1,5 раза больше, чем у кнопки с глифом шрифта 12, высота — как у соседней кнопки).
-        refresh_box = tk.Frame(prepare_frame, bg='#d4e8f7')
-        btn_refresh = tk.Button(refresh_box, text="\u21bb", command=self._refresh_lists,
-                                font=('Arial', 16, 'bold'), bg='#6a4a8a', fg='white',
-                                padx=0, pady=0)
-        btn_refresh.pack(fill='both', expand=True)
-        ToolTip(btn_refresh, "Обновить список файлов")
-        btn_edit = tk.Button(prepare_frame, text="Редактировать", command=self._open_selected_file,
+        # Пиктограмма «обновить» нарисована кодом, как в Синеве Mobile (круговая стрелка); цвет кнопки прежний.
+        self._refresh_icon = make_photo(self.root, refresh_icon_rows(26, REFRESH_BG, '#ffffff'))
+        btn_refresh = tk.Button(prepare_frame, image=self._refresh_icon, command=self._refresh_lists,
+                                bg=REFRESH_BG, activebackground=REFRESH_BG, bd=2, padx=2, pady=1)
+        btn_refresh.pack(side='left', padx=(0, 5))
+        ToolTip(btn_refresh, "Обновить список книг")
+        btn_edit = tk.Button(prepare_frame, text="Редактирование (разбивка) книги", command=self._open_selected_file,
                              font=('Arial', 12, 'bold'), bg='#6a4a8a', fg='white',
                              padx=3, pady=1)
-        try:
-            from tkinter import font as tkfont
-            btn_edit.update_idletasks()
-            height = btn_edit.winfo_reqheight()
-            width = (tkfont.Font(family='Arial', size=12, weight='bold').measure("\u21bb") + 6
-                     + 2 * (int(btn_refresh.cget('borderwidth')) + int(btn_refresh.cget('highlightthickness'))))
-            width = int(width * 1.5)   # шире прежней в полтора раза
-            if height > 1 and width > 1:
-                refresh_box.configure(width=width, height=height)
-                refresh_box.pack_propagate(False)
-        except Exception:
-            pass   # не вышло измерить — кнопка просто примет естественный размер
-        refresh_box.pack(side='left', padx=(0, 5))
         btn_edit.pack(side='left')
-        tk.Button(prepare_frame, text="Собрать базу", command=self.open_file_merger,
-                  font=('Arial', 12, 'bold'), bg='#6a4a8a', fg='white',
-                  padx=3, pady=1).pack(side='left', padx=(5, 0))
 
     def _refresh_lists(self):
         """Кнопка обновления: перечитывает mconfig.ini (псевдонимы баз) и заново
@@ -1159,6 +1150,10 @@ class AppWindow(ABC):
                 self.status_entry.xview_moveto(current + 0.01)
 
     # ---------- Текст справки ----------
+    def show_readme(self):
+        """Кнопка «Помощь»: текст readme.txt в окне результатов."""
+        self.results_renderer.render_readme()
+
     def _show_help_text(self):
         self.results_renderer.render_help_text()
         self.btn_first.config(state='disabled')
@@ -1493,7 +1488,7 @@ class AppWindow(ABC):
         self.search_controller.refresh_display()
 
     def open_file_merger(self):
-        """Кнопка "Собрать базу" — окно склейки нескольких файлов в один (см.
+        """Кнопка «Добавить книги» — окно добавления и склейки нескольких файлов в один (см.
            ui/file_merger_dialog.py). Папки, запомненные с прошлого раза,
            берутся из настроек (mconfig.ini через load_config)."""
         output_dir = (self.config.get('merge_output_dir') or 'DB')
@@ -1511,10 +1506,10 @@ class AppWindow(ABC):
                 on_files_moved=self.file_manager.on_books_copied,
             )
         except Exception as e:
-            messagebox.showerror("Ошибка", f"Не удалось открыть окно сборки базы:\n{e}")
+            messagebox.showerror("Ошибка", f"Не удалось открыть окно «Добавить или собрать файлы книг»:\n{e}")
 
     def _remember_merge_dirs(self, source_dir=None, output_dir=None):
-        """Запоминает папки окна "Собрать базу" в настройках и сохраняет
+        """Запоминает папки окна «Добавить или собрать файлы книг» в настройках и сохраняет
            mconfig.ini. None — этот параметр не менялся.
 
            Обновляем ВСЕ живые словари конфигурации, а не только self.config:

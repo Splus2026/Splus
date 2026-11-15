@@ -39,6 +39,7 @@ class ResultsRenderer:
         # Слои поверх подчёркнутого (как в Синеве Mobile): крупный шрифт, цвет и свои мысли.
         self.font_step = 2          # на сколько пунктов «крупный» шрифт больше обычного
         self.marks_only = False     # режим «только отмеченное» (подчёркнутое, выделенное, мысли): правка слоёв выключена
+        self.start_overlay = None   # крупная кнопка «Добавить книги» по центру (ui/start_button.py)
         self.note_click = None      # callback(note_id): клик по тексту мысли
         self._replay = None         # как заново нарисовать то, что на экране (после добавления/правки мысли)
         self._note_spans = []       # [(регион, начало, конец, id_мысли)] — где на экране мысли
@@ -161,17 +162,29 @@ class ResultsRenderer:
         if self.label_widget:
             self.label_widget.config(text=text)
 
-    # ---------- Текст справки ----------
+    # ---------- Стартовый экран и справка ----------
+    def _set_start(self, visible):
+        if self.start_overlay is not None:
+            (self.start_overlay.show if visible else self.start_overlay.hide)()
+
     def render_help_text(self):
-        """Показывает содержимое readme.txt как текст справки — когда нет
-           результатов поиска, запрос слишком короткий, или это первый показ
-           окна. Раньше эта логика была продублирована в app_window.py и
-           search_controller.py — теперь единая реализация."""
+        """Пустое окно результатов (нет результатов поиска, запрос слишком короткий, первый показ): по центру
+           крупная кнопка «Добавить книги». Текст справки (readme.txt) показывает кнопка «Помощь» — render_readme()."""
         self.result_text.config(state='normal')
         self.result_text.update_idletasks()
         self.result_text.delete(1.0, tk.END)
         self.regions = []
         self._replay = None
+        self._set_start(True)
+
+    def render_readme(self):
+        """Показывает содержимое readme.txt (кнопка «Помощь»)."""
+        self.result_text.config(state='normal')
+        self.result_text.update_idletasks()
+        self.result_text.delete(1.0, tk.END)
+        self.regions = []
+        self._replay = None
+        self._set_start(False)
         help_file = resource_path("readme.txt")
         try:
             with open(help_file, 'r', encoding='utf-8') as f:
@@ -199,6 +212,7 @@ class ResultsRenderer:
         self.result_text.update_idletasks()
         self.result_text.delete(1.0, tk.END)
         self.regions = []
+        self._set_start(False)
 
         header_text = f"=== Результаты поиска (страница {page_num + 1}, всего {total_count}) ===\n\n"
         self.result_text.insert(tk.END, header_text)
@@ -239,6 +253,7 @@ class ResultsRenderer:
         self.result_text.update_idletasks()
         self.result_text.delete(1.0, tk.END)
         self.regions = []
+        self._set_start(False)
         for number, item in enumerate(topics):
             if number:
                 self.result_text.insert(tk.END, "\n")
@@ -349,6 +364,7 @@ class ResultsRenderer:
         self.result_text.delete(1.0, tk.END)
         self.result_text.update_idletasks()
         self.regions = []
+        self._set_start(False)
         self._replay = None
         header = "◀ Назад к результатам\n\n"
         self.result_text.insert(tk.END, header)
@@ -398,6 +414,7 @@ class ResultsRenderer:
 
     def render_error(self, message):
         self.regions = []
+        self._set_start(False)
         self._replay = None
         self.result_text.config(state='normal')
         self.result_text.delete(1.0, tk.END)

@@ -203,5 +203,28 @@ try: sc.set_view_mode('x'); bad = False
 except ValueError: bad = True
 check('неизвестный режим — ошибка', bad)
 
+# ===================== G. стартовый экран, справка, пиктограмма =====================
+from ui.start_button import scaled_metrics
+from utils.icons import refresh_icon_rows
+class Overlay:
+    def __init__(self): self.on = False
+    def show(self): self.on = True
+    def hide(self): self.on = False
+w, r = make(); ov = Overlay(); r.start_overlay = ov
+r.render_help_text(); check('пустое окно: поверх показана кнопка «Добавить книги», текста справки нет', ov.on and w.text == '')
+r.render_readme(); check('«Помощь»: кнопка скрыта, показан текст readme (или сообщение о его отсутствии)', not ov.on and len(w.text) > 10)
+r.render_help_text(); page(r, tps(*T)); check('страница результатов скрывает стартовую кнопку', not ov.on and 'Alpha' in w.text)
+r.render_help_text(); r.render_error('ошибка'); check('сообщение об ошибке скрывает стартовую кнопку', not ov.on)
+f_small, _, _ = scaled_metrics(500, 300); f_big, px, py = scaled_metrics(1600, 900)
+check('размер кнопки растёт вместе с окном и ограничен (14…34 пт)', 14 <= f_small < f_big <= 34 and px > py > 0 and scaled_metrics(100, 100)[0] == 14 and scaled_metrics(9000, 9000)[0] == 34, str((f_small, f_big)))
+rows = refresh_icon_rows(26)
+cells = [c for row in rows for c in row]
+check('пиктограмма обновления: 26×26, цвета фона кнопки и белый, края сглажены', len(rows) == 26 and all(len(x) == 26 for x in rows) and '#6a4a8a' in cells and '#ffffff' in cells and len(set(cells)) > 4)
+check('пиктограмма — круг с просветом: центр и угол фоновые, на кольце есть белые', rows[13][13] == '#6a4a8a' and rows[0][0] == '#6a4a8a' and rows[13][3] != '#6a4a8a')
+msrc = open(os.path.join(env.ROOT, 'ui/file_merger_dialog.py'), encoding='utf-8').read()
+check('окно слияния: заголовок окна, заголовок внутри, кнопки «Копировать в книги» слева и «Объединить и добавить в книги» справа',
+      'self.root.title("Добавить или собрать файлы книг")' in msrc and 'text="Добавить (собрать части)"' in msrc
+      and msrc.index('"📥 Копировать в книги"') < msrc.index('"🚀 Объединить и добавить в книги"') and 'ОБЪЕДИНИТЬ' not in msrc)
+
 print(f"\nПроверок: {len(results)}, провалено: {results.count(False)}")
 sys.exit(1 if False in results else 0)

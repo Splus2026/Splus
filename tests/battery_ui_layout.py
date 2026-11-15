@@ -28,8 +28,8 @@ def fn(name): return ('fn', name)
 def bound(widget): return [a[0] for m, a, k in calls(widget, 'bind')]
 
 # ===================== A. зоны окна и порядок упаковки =====================
-top, status_row, main_paned = U.children(0)
-check('под корнем три зоны: верхняя строка поиска, строка статуса, основная панель', len(U.children(0)) == 3 and U.new(main_paned)[0] == 'PanedWindow')
+top, status_row, main_paned = [c for c in U.children(0) if U.new(c)[0] != 'PhotoImage']   # картинка кнопки обновления — не виджет
+check('под корнем три зоны: верхняя строка поиска, строка статуса, основная панель', len([c for c in U.children(0) if U.new(c)[0] != 'PhotoImage']) == 3 and U.new(main_paned)[0] == 'PanedWindow')
 check('верхняя строка: растягивается по ширине', U.layout(top) == ('pack', {'fill': 'x'}), str(U.layout(top)))
 check('порядок упаковки: строка статуса (внизу) упаковывается РАНЬШЕ основной панели — иначе панель заняла бы всё место, и для статуса его не осталось бы', U.position(top) < U.position(status_row) < U.position(main_paned), str((U.position(top), U.position(status_row), U.position(main_paned))))
 check('строка статуса: внизу окна, по ширине, отступы 10 по бокам и 8 снизу', U.layout(status_row) == ('pack', {'fill': 'x', 'padx': 10, 'pady': (0, 8), 'side': 'bottom'}), str(U.layout(status_row)))
@@ -47,7 +47,7 @@ check('Enter в поле запроса запускает поиск (прив�
 o = opts(win.btn_settings)
 check('«Настройки»: кнопка-меню фиолетовая, слева; в неё вставлено меню настроек', o['text'] == 'Настройки' and o['bg'] == '#6a4a8a' and lay(win.btn_settings) == ('pack', {'padx': 3, 'side': 'left'}) and any(c == {'menu': ('w', U.id(win.settings_menu))} for c in U.configs(U.id(win.btn_settings))))
 entries = [(k['label'], k.get('command'), k.get('menu')) for m, a, k in calls(win.settings_menu) if m in ('add_command', 'add_cascade')]
-check('меню настроек: «Конфигурация», «Экспорт подчеркнутых», синхронизация (2 пункта), «Сменить пароль» и подменю «Выбор движка» (его пункты заполняет главное окно)', entries == [('Конфигурация', fn('AppWindow.open_config'), None), ('Экспорт подчеркнутых', fn('AppWindow.export_underlined'), None), ('Папка синхронизации…', fn('AppWindow.choose_sync_folder'), None), ('Синхронизировать с телефоном', fn('AppWindow.sync_with_phone'), None), ('Сменить пароль', fn('AppWindow.change_password_dialog'), None), ('Выбор движка', None, ('w', U.id(win.engine_submenu)))], str(entries))
+check('меню настроек: «Добавить книги…», «Конфигурация», «Экспорт подчеркнутых», синхронизация (2 пункта), «Сменить пароль» и подменю «Выбор движка» (его пункты заполняет главное окно)', entries == [('Добавить книги…', fn('AppWindow.open_file_merger'), None), ('Конфигурация', fn('AppWindow.open_config'), None), ('Экспорт подчеркнутых', fn('AppWindow.export_underlined'), None), ('Папка синхронизации…', fn('AppWindow.choose_sync_folder'), None), ('Синхронизировать с телефоном', fn('AppWindow.sync_with_phone'), None), ('Сменить пароль', fn('AppWindow.change_password_dialog'), None), ('Выбор движка', None, ('w', U.id(win.engine_submenu)))], str(entries))
 check('подменю движка — дочернее меню настроек, без «отрывной» полоски', U.new(U.id(win.engine_submenu))[1] == ('w', U.id(win.settings_menu)) and opts(win.engine_submenu)['tearoff'] == 0 and opts(win.settings_menu)['tearoff'] == 0)
 check('«Выход»: красная кнопка справа, закрывает программу (on_close)', bopts('Выход')['command'] == fn('AppWindow.on_close') and bopts('Выход')['bg'] == '#b84a4a' and blay('Выход') == ('pack', {'padx': 3, 'side': 'right'}))
 # ===================== C. строка статуса =====================
@@ -70,10 +70,11 @@ for w_, text, command, layout in expected_nav:
 check('порядок кнопок навигации слева направо: «В начало», «Назад», «Вперед», «В конец»', [U.position(U.id(w_)) for w_, *_ in expected_nav] == sorted(U.position(U.id(w_)) for w_, *_ in expected_nav))
 check('«КП» (ключевые понятия): команда, цвет, в первой строке слева', bopts('КП')['command'] == fn('AppWindow._add_key_concept') and bopts('КП')['bg'] == '#2a6fbf' and blay('КП') == ('pack', {'padx': (80, 0), 'side': 'left'}))
 check('«Ч» (подчеркнуть) — первая кнопка второй строки, подчёркнутый шрифт', bopts('Ч')['command'] == fn('AppWindow._toggle_underline') and bopts('Ч')['font'] == ('Arial', 12, 'bold underline') and blay('Ч') == ('pack', {'padx': (0, 4), 'side': 'left'}))
-check('вторая строка слева: «Ч», «A+», «Цвет», «Мысль» — по порядку', [U.position(btn(t)) for t in ('Ч', 'A+', 'Цвет', 'Мысль')] == sorted(U.position(btn(t)) for t in ('Ч', 'A+', 'Цвет', 'Мысль')))
-all_ids = U.find('Button', text='Все'); mode_all = [i for i in all_ids if U.layout(i) == ('pack', {'padx': (4, 0), 'side': 'right'})]
-check('справа: «Все», «Кратко», «Отметки» — кнопки режимов показа, пакуются справа налево (видны слева направо)', len(mode_all) == 1 and all(blay(t) == ('pack', {'padx': (4, 0), 'side': 'right'}) for t in ('Кратко', 'Отметки')) and U.position(btn('Отметки')) < U.position(btn('Кратко')) < U.position(mode_all[0]))
-check('подсказки («Ч», «КП», «Кратко») подключены') if False else check('подсказки («Ч», «КП», «Кратко») подключены (события наведения привязаны)', all('<Enter>' in [a[0] for m, a, k in U.calls(btn(t), 'bind')] for t in ('Ч', 'КП', 'Кратко')))
+check('вторая строка слева: «Ч», «A+», «Цвет», «Мысли» — по порядку', [U.position(btn(t)) for t in ('Ч', 'A+', 'Цвет', 'Мысли')] == sorted(U.position(btn(t)) for t in ('Ч', 'A+', 'Цвет', 'Мысли')))
+
+check('справа: «Полный», «Краткий», «Отметки» — режимы показа, пакуются справа налево (видны слева направо)', all(blay(t) == ('pack', {'padx': (4, 0), 'side': 'right'}) for t in ('Полный', 'Краткий', 'Отметки')) and U.position(btn('Отметки')) < U.position(btn('Краткий')) < U.position(btn('Полный')))
+check('«Помощь» посередине второй строки: после «Мысли», до «Полный», открывает справку', blay('Помощь') == ('pack', {'expand': True, 'side': 'left'}) and bopts('Помощь')['command'] == fn('AppWindow.show_readme') and U.position(btn('Мысли')) < U.position(btn('Помощь')))
+check('подсказки («Ч», «КП», «Краткий», «Помощь») подключены (события наведения привязаны)', all('<Enter>' in [a[0] for m, a, k in U.calls(btn(t), 'bind')] for t in ('Ч', 'КП', 'Краткий', 'Помощь')))
 check('«−В»: кнопка создана, но НЕ упакована (показывает и прячет её окно «Совпадения» вместе с кнопкой 3D/2D)', U.new(btn('−В'))[2]['command'] == fn('AppWindow.toggle_word_variations') and U.layout(btn('−В')) is None and '<Enter>' in [a[0] for m, a, k in U.calls(btn('−В'), 'bind')])
 # ===================== F. центр: окна результатов =====================
 rp = win.results_paned
@@ -87,7 +88,7 @@ tags = {a[0]: k for m, a, k in calls(rt, 'tag_configure')}
 check('теги верхнего окна: подсветка слова (жёлтый), частичного совпадения (светло-жёлтый) и гиперссылка (синий, подчёркнутый)', tags == {'highlight': {'background': '#FFFF00', 'selectforeground': 'black'}, 'partial': {'background': '#FFFF99', 'selectforeground': 'black'}, 'hyperlink': {'foreground': 'blue', 'underline': True}}, str(tags))
 tb = [(a[0], a[1], ) for m, a, k in calls(rt, 'tag_bind')]
 check('гиперссылка: рука при наведении и обычный курсор при уходе (лямбды), клик открывает файл топика (on_hyperlink_click)', tb == [('hyperlink', '<Enter>'), ('hyperlink', '<Leave>'), ('hyperlink', '<Button-1>')] and [a[2] for m, a, k in calls(rt, 'tag_bind')] == [fn('<lambda>'), fn('<lambda>'), fn('AppWindow.on_hyperlink_click')], str(calls(rt, 'tag_bind')))
-check('правая кнопка мыши в верхнем окне добавляет выделенное в конспект', [(a[0], a[1]) for m, a, k in calls(rt, 'bind')] == [('<Button-3>', fn('AppWindow.append_selection_to_conspect'))])
+check('правая кнопка мыши в верхнем окне добавляет выделенное в конспект', [(a[0], a[1]) for m, a, k in calls(rt, 'bind') if a[0] == '<Button-3>'] == [('<Button-3>', fn('AppWindow.append_selection_to_conspect'))])
 rt2 = win.result_text_2
 tags2 = {a[0] for m, a, k in calls(rt2, 'tag_configure')}
 check('нижнее окно результатов (режим разделения): те же подсветки, но БЕЗ гиперссылки (в этом режиме шапок нет); правая кнопка — в конспект', tags2 == {'highlight', 'partial'} and U.new(U.id(rt2))[1] == ('w', U.id(win.results_bottom_frame)) and [(a[0], a[1]) for m, a, k in calls(rt2, 'bind')] == [('<Button-3>', fn('AppWindow.append_selection_to_conspect'))])
@@ -95,7 +96,7 @@ check('холст 2D-визуализации создан в верхней о�
 # ===================== G. правая панель =====================
 check('правая панель: ширина 355 (и в конструкторе, и после), НЕ раздувается содержимым (pack_propagate(False))', U.new(right)[2].get('width') == 355 and {'width': 355} in U.configs(right) and U.calls(right, 'pack_propagate')[0][1] == (False,))
 top_right, bottom_right, prepare_frame = U.children(right)
-check('правая панель: сверху индексы, ниже файлы, внизу кнопки «Редактировать»/«Собрать базу» — все три делят место', U.layout(top_right) == ('pack', {'expand': True, 'fill': 'both', 'padx': 5, 'pady': 5}) and U.layout(bottom_right) == ('pack', {'expand': True, 'fill': 'both', 'padx': 5, 'pady': 5}) and U.layout(prepare_frame) == ('pack', {'fill': 'x', 'padx': 5, 'pady': 5}))
+check('правая панель: сверху индексы, ниже файлы, внизу кнопки обновления и редактирования — все три делят место', U.layout(top_right) == ('pack', {'expand': True, 'fill': 'both', 'padx': 5, 'pady': 5}) and U.layout(bottom_right) == ('pack', {'expand': True, 'fill': 'both', 'padx': 5, 'pady': 5}) and U.layout(prepare_frame) == ('pack', {'fill': 'x', 'padx': 5, 'pady': 5}))
 check('заголовок индексов: «Индексы:» и счётчик «(0)»', bool(U.find('Label', text='Индексы:')) and opts(win.selected_count_label)['text'] == '(0)' and lay(win.selected_count_label) == ('pack', {'padx': (4, 8), 'side': 'left'}))
 expected_idx = [('Все', 'AppWindow._toggle_select_all', '#4a7a8a', {'padx': 5, 'side': 'left'}), ('Удалить', '<lambda>', '#b84a4a', {'padx': 2, 'side': 'left'}),
                 ('Т', 'VisualizationController.show_word_cloud_for_selected', '#6a4a8a', {'padx': 2, 'side': 'left'}), ('Ц', 'VisualizationController.show_textrank_for_selected', '#6a4a8a', {'padx': 2, 'side': 'left'})]
@@ -104,10 +105,12 @@ for text, command, color, layout in expected_idx:
 check('«Т» и «Ц» привязаны к методам КОНТРОЛЛЕРА визуализаций и снабжены подсказками', bopts('Т')['command'] == ('fn', 'VisualizationController.show_word_cloud_for_selected') and all('<Enter>' in [a[0] for m, a, k in U.calls(btn(t), 'bind')] for t in ('Т', 'Ц')))
 cl = win.index_check_list
 check('список индексов: настоящий IndexCheckList под заголовком, без обратного вызова (его подключает менеджер индексов), на всё место; для движка Manticore — множественный выбор', type(cl).__name__ == 'IndexCheckList' and cl.single_select is False and lay(cl) == ('pack', {'expand': True, 'fill': 'both'}) and U.new(U.id(cl))[1] == ('w', top_right))
-check('заголовок файлов: «Файлы:», кнопки «▲ В индекс» (_add_to_index) и «▲ Векторы» (prepare_vectors) слева', bool(U.find('Label', text='Файлы:')) and bopts('▲ В индекс')['command'] == fn('AppWindow._add_to_index') and bopts('▲ Векторы')['command'] == fn('AppWindow.prepare_vectors') and blay('▲ В индекс') == ('pack', {'padx': 3, 'side': 'left'}) and blay('▲ Векторы') == ('pack', {'padx': 3, 'side': 'left'}))
+check('заголовок книг: «Книги:», кнопки «▲ В индекс» (_add_to_index) и «▲ Векторы» (prepare_vectors) слева', bool(U.find('Label', text='Книги:')) and bopts('▲ В индекс')['command'] == fn('AppWindow._add_to_index') and bopts('▲ Векторы')['command'] == fn('AppWindow.prepare_vectors') and blay('▲ В индекс') == ('pack', {'padx': 3, 'side': 'left'}) and blay('▲ Векторы') == ('pack', {'padx': 3, 'side': 'left'}))
 lb = win.text_listbox
 check('список файлов: Listbox с выбором нескольких (Ctrl/Shift), Consolas, белый фон, на всё место; выбор и правый клик привязаны', U.new(U.id(lb))[0] == 'Listbox' and opts(lb) == {'font': ('Consolas', win.font_size), 'bg': 'white', 'fg': '#1a2a3a', 'selectmode': 'extended'} and lay(lb) == ('pack', {'expand': True, 'fill': 'both'}) and [(a[0], a[1]) for m, a, k in calls(lb, 'bind')] == [('<<ListboxSelect>>', fn('AppWindow._on_text_select')), ('<Button-3>', fn('AppWindow._on_text_right_click'))], str(calls(lb, 'bind')))
-check('кнопки «Редактировать» и «Собрать базу» внизу правой панели слева направо', bopts('Редактировать')['command'] == fn('AppWindow._open_selected_file') and bopts('Собрать базу')['command'] == fn('AppWindow.open_file_merger') and blay('Редактировать') == ('pack', {'side': 'left'}) and blay('Собрать базу') == ('pack', {'padx': (5, 0), 'side': 'left'}) and U.position(btn('Редактировать')) < U.position(btn('Собрать базу')))
+check('внизу правой панели: обновление списка (картинка) и «Редактирование (разбивка) книги»; «Собрать базу» там больше нет', bopts('Редактирование (разбивка) книги')['command'] == fn('AppWindow._open_selected_file') and blay('Редактирование (разбивка) книги') == ('pack', {'side': 'left'}) and not U.find('Button', text='Собрать базу') and [U.new(i)[2]['command'] for i in U.find('Button', activebackground='#6a4a8a')] == [fn('AppWindow._refresh_lists')] and 'image' in U.new(U.find('Button', activebackground='#6a4a8a')[0])[2] and U.new(U.find('Button', activebackground='#6a4a8a')[0])[2]['bg'] == '#6a4a8a')
+sb = U.find('Button', text='Добавить книги')
+check('«Добавить книги»: одна крупная стартовая кнопка внутри окна результатов, команда open_file_merger', len(sb) == 1 and U.new(sb[0])[1] == ('w', U.id(win.result_text)) and U.new(sb[0])[2]['command'] == fn('AppWindow.open_file_merger'))
 # ===================== H. итог =====================
 ran = 0
 for func, args in list(tk.AFTER_QUEUE):
