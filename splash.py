@@ -31,17 +31,6 @@ def _bg_path():
     return next((p for p in names if os.path.isfile(p)), None)
 
 
-def _draw_logo(c, cx=70, cy=78, r=34):
-    """Логотип: белое кольцо с тремя волнами внутри (синева)."""
-    c.create_oval(cx - r, cy - r, cx + r, cy + r, outline='white', width=3)
-    for dy, w in ((-12, 2), (0, 3), (12, 2)):
-        pts = []
-        for i in range(0, 9):
-            x = cx - r + 10 + i * (2 * r - 20) / 8
-            pts += [x, cy + dy + (-5 if i % 2 else 5)]
-        c.create_line(*pts, smooth=True, fill='white', width=w, capstyle='round')
-
-
 def show(status=None, master=None, version=''):
     """Показывает заставку (повторный вызов только обновляет надпись). master=None — своё окно Tk,
        иначе Toplevel главного окна. Возвращает True, если заставка на экране."""
@@ -69,13 +58,13 @@ def show(status=None, master=None, version=''):
                 c.create_image(0, 0, image=_bg, anchor='nw')
             except Exception:
                 _bg = None
-        _draw_logo(c)
-        c.create_text(124, 64, text="Синева+", anchor='w', fill='#0a2a5e', font=('Arial', 30, 'bold'))
-        c.create_text(122, 62, text="Синева+", anchor='w', fill='white', font=('Arial', 30, 'bold'))
-        c.create_text(124, 100, text="полнотекстовый поиск по книгам", anchor='w', fill='white', font=('Arial', 11))
+        cx = WIDTH // 2
+        c.create_text(cx + 2, 72, text="Синева+", fill='#0a2a5e', font=('Arial', 26, 'bold'))
+        c.create_text(cx, 70, text="Синева+", fill='white', font=('Arial', 26, 'bold'))
+        c.create_text(cx, 112, text="платформа динамического поиска", fill='white', font=('Arial', 10))
         if version:
-            c.create_text(WIDTH - 24, 188, text=f"версия {version}", anchor='e', fill='#0b2a55', font=('Arial', 9))
-        _ids['status'] = c.create_text(24, 188, text='', anchor='w', fill='#0b2a55', font=('Arial', 11, 'bold'))
+            c.create_text(WIDTH - 24, 188, text=f"версия {version}", anchor='e', fill='#0b2a55', font=('Arial', 8))
+        _ids['status'] = c.create_text(24, 188, text='', anchor='w', fill='#0b2a55', font=('Arial', 9, 'bold'))
         c.create_rectangle(24, 204, WIDTH - 24, 212, fill='white', outline='#7fa6d6')
         _ids['bar'] = c.create_rectangle(24, 204, 24, 212, fill='#1f5fbf', outline='')
         set_status(status or STAGES[0])
