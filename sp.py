@@ -179,7 +179,14 @@ def main():
     # Создаём главное окно, но скрываем его до авторизации
     root = tk.Tk()
     root.withdraw()
-    root.geometry("1400x750")
+    # Главное окно — по центру экрана (заставка при запуске совпадает с центром окна)
+    win_w, win_h = 1400, 750
+    try:
+        sw, sh = root.winfo_screenwidth(), root.winfo_screenheight()
+        win_w, win_h = min(win_w, sw), min(win_h, sh - 80)
+        root.geometry(f"{win_w}x{win_h}+{max(0, (sw - win_w) // 2)}+{max(0, (sh - win_h) // 2)}")
+    except Exception:
+        root.geometry("1400x750")
 
     # Показываем диалог авторизации
     if not show_authorization_dialog(root):

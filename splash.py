@@ -47,7 +47,17 @@ def show(status=None, master=None, version=''):
         _win.overrideredirect(True)
         _win.attributes('-topmost', True)
         x = (_win.winfo_screenwidth() - WIDTH) // 2
-        y = (_win.winfo_screenheight() - HEIGHT) // 3
+        y = (_win.winfo_screenheight() - HEIGHT) // 2
+        if master is not None:
+            # по центру окна, поверх которого показывается заставка (если оно уже имеет размер)
+            try:
+                master.update_idletasks()
+                mw, mh = master.winfo_width(), master.winfo_height()
+                if mw > 1 and mh > 1:
+                    x = master.winfo_rootx() + (mw - WIDTH) // 2
+                    y = master.winfo_rooty() + (mh - HEIGHT) // 2
+            except Exception:
+                pass
         _win.geometry(f"{WIDTH}x{HEIGHT}+{x}+{y}")
         c = _canvas = tk.Canvas(_win, width=WIDTH, height=HEIGHT, highlightthickness=0, bg='#2a6fbf')
         c.pack()
