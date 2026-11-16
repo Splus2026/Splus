@@ -39,6 +39,7 @@ def _add_dir(datas, name):
 # а рядом с Sineva.exe (копируются после COLLECT, см. конец файла): так их видно и можно править.
 datas = []
 binaries = []
+_add_file(datas, 'splash_bg.png')   # фон заставки при запуске (splash.py)
 
 # gensim (FastText) содержит скомпилированные модули и подгружает их динамически, поэтому
 # PyInstaller сам их не находит: собираем пакет целиком вместе с зависимостями.
@@ -57,7 +58,7 @@ for _pkg in ('gensim', 'smart_open', 'scipy'):
 
 # Модули, подключаемые лениво (внутри функций) и по имени — подстраховка для анализатора.
 hiddenimports = [
-    'exe_layout',
+    'exe_layout', 'splash',
     'pymysql', 'psutil', 'openpyxl', 'docx', 'pypdf', 'PyPDF2',
     'keyboard', 'pyperclip',
     'nltk', 'nltk.stem.snowball', 'nltk.tokenize',

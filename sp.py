@@ -1,4 +1,6 @@
 import exe_layout  # noqa: F401  (раскладка файлов рядом с exe; должен быть первым)
+import splash
+splash.show(splash.STAGES[0])   # заставка появляется сразу, до загрузки тяжёлых модулей
 import tkinter as tk
 from ui.custom_dialogs import messagebox
 from config import load_config, create_engine, resource_path
@@ -173,6 +175,7 @@ def ensure_db_folder():
         print(f"ℹ️ Создана пустая папка DB в {dest_dir}")
 
 def main():
+    splash.close()   # на время ввода пароля заставка не нужна
     # Создаём главное окно, но скрываем его до авторизации
     root = tk.Tk()
     root.withdraw()
@@ -184,6 +187,7 @@ def main():
 
     # После успешной авторизации показываем главное окно
     root.deiconify()
+    splash.show(splash.STAGES[1], master=root, version=APP_VERSION)
 
     if STATS_ENABLED:
         stats_logger.enable_stats()
@@ -199,11 +203,14 @@ def main():
     config = load_config()
 
     def show_startup_failure(title, text):
+        splash.close()
         # Движок окон не создаёт — он сообщает о неудачном запуске, а показываем мы (у нас есть окно)
         messagebox.showerror(title, text, parent=root)
 
+    splash.set_status(splash.STAGES[2])
     engine = create_engine(config['engine_type'], config['engine_params'], on_startup_failure=show_startup_failure)
     if config.get('last_db'):
+        splash.set_status(splash.STAGES[3])
         engine.connect(config['last_db'])
 
     root.title(f"Синева+ {APP_VERSION} — {datetime.now().strftime('%d.%m.%Y')}")
@@ -211,7 +218,10 @@ def main():
     import ui.about_dialog as about_dialog
     about_dialog.APP_VERSION = APP_VERSION
 
+    splash.set_status(splash.STAGES[4])
     app = MainWindow(root, engine, config)
+    splash.set_status(splash.STAGES[5])
+    splash.close()
 
     ready_time = time.time()
     startup_duration = (ready_time - start_time) * 1000

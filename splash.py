@@ -1,0 +1,117 @@
+"""Заставка при запуске: небольшое окно без рамки, подтверждающее, что программа стартовала.
+
+Модуль намеренно лёгкий (только tkinter), чтобы окно появилось сразу, ДО загрузки тяжёлых модулей.
+Любая ошибка внутри заставки не должна мешать запуску программы — все вызовы безопасны.
+Фон — файл splash_bg.png рядом с программой (нет файла — рисуется однотонный синий фон)."""
+import os
+import sys
+
+WIDTH, HEIGHT = 462, 237
+STAGES = (
+    "Загрузка модулей…",
+    "Чтение настроек…",
+    "Запуск движка поиска…",
+    "Подключение к базе…",
+    "Построение интерфейса…",
+    "Готово",
+)
+
+_win = None
+_canvas = None
+_bg = None
+_ids = {}
+_owns_root = False
+
+
+def _bg_path():
+    names = [os.path.join(os.path.dirname(os.path.abspath(__file__)), 'splash_bg.png')]
+    if getattr(sys, 'frozen', False):
+        names.insert(0, os.path.join(os.path.dirname(sys.executable), 'splash_bg.png'))
+        names.append(os.path.join(getattr(sys, '_MEIPASS', ''), 'splash_bg.png'))
+    return next((p for p in names if os.path.isfile(p)), None)
+
+
+def _draw_logo(c, cx=70, cy=78, r=34):
+    """Логотип: белое кольцо с тремя волнами внутри (синева)."""
+    c.create_oval(cx - r, cy - r, cx + r, cy + r, outline='white', width=3)
+    for dy, w in ((-12, 2), (0, 3), (12, 2)):
+        pts = []
+        for i in range(0, 9):
+            x = cx - r + 10 + i * (2 * r - 20) / 8
+            pts += [x, cy + dy + (-5 if i % 2 else 5)]
+        c.create_line(*pts, smooth=True, fill='white', width=w, capstyle='round')
+
+
+def show(status=None, master=None, version=''):
+    """Показывает заставку (повторный вызов только обновляет надпись). master=None — своё окно Tk,
+       иначе Toplevel главного окна. Возвращает True, если заставка на экране."""
+    global _win, _canvas, _bg, _ids, _owns_root
+    try:
+        if _win is not None:
+            set_status(status)
+            return True
+        import tkinter as tk
+        if master is None:
+            _win = tk.Tk(); _owns_root = True
+        else:
+            _win = tk.Toplevel(master); _owns_root = False
+        _win.overrideredirect(True)
+        _win.attributes('-topmost', True)
+        x = (_win.winfo_screenwidth() - WIDTH) // 2
+        y = (_win.winfo_screenheight() - HEIGHT) // 3
+        _win.geometry(f"{WIDTH}x{HEIGHT}+{x}+{y}")
+        c = _canvas = tk.Canvas(_win, width=WIDTH, height=HEIGHT, highlightthickness=0, bg='#2a6fbf')
+        c.pack()
+        path = _bg_path()
+        if path:
+            try:
+                _bg = tk.PhotoImage(file=path, master=_win)
+                c.create_image(0, 0, image=_bg, anchor='nw')
+            except Exception:
+                _bg = None
+        _draw_logo(c)
+        c.create_text(124, 64, text="Синева+", anchor='w', fill='#0a2a5e', font=('Arial', 30, 'bold'))
+        c.create_text(122, 62, text="Синева+", anchor='w', fill='white', font=('Arial', 30, 'bold'))
+        c.create_text(124, 100, text="полнотекстовый поиск по книгам", anchor='w', fill='white', font=('Arial', 11))
+        if version:
+            c.create_text(WIDTH - 24, 188, text=f"версия {version}", anchor='e', fill='#0b2a55', font=('Arial', 9))
+        _ids['status'] = c.create_text(24, 188, text='', anchor='w', fill='#0b2a55', font=('Arial', 11, 'bold'))
+        c.create_rectangle(24, 204, WIDTH - 24, 212, fill='white', outline='#7fa6d6')
+        _ids['bar'] = c.create_rectangle(24, 204, 24, 212, fill='#1f5fbf', outline='')
+        set_status(status or STAGES[0])
+        return True
+    except Exception:
+        _win = None
+        return False
+
+
+def set_status(text=None):
+    """Меняет надпись; полоса показывает, какой по счёту этап из STAGES (по тексту)."""
+    try:
+        if _win is None or text is None:
+            return
+        _canvas.itemconfigure(_ids['status'], text=text)
+        try:
+            k = STAGES.index(text) + 1
+        except ValueError:
+            k = None
+        if k:
+            _canvas.coords(_ids['bar'], 24, 204, 24 + (WIDTH - 48) * k / len(STAGES), 212)
+        _win.update()
+    except Exception:
+        pass
+
+
+def close():
+    global _win, _canvas, _bg, _ids
+    try:
+        if _win is not None:
+            _win.destroy()
+    except Exception:
+        pass
+    _win = _canvas = _bg = None
+    _ids = {}
+
+
+def is_shown():
+    return _win is not None
