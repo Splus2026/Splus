@@ -1,6 +1,7 @@
 import exe_layout  # noqa: F401  (раскладка файлов рядом с exe; должен быть первым)
 import splash
-splash.show(splash.STAGES[0])   # заставка появляется сразу, до загрузки тяжёлых модулей
+APP_VERSION = "1.0.0"
+splash.show(splash.STAGES[0], version=splash.version_text(APP_VERSION))   # заставка появляется сразу, до загрузки тяжёлых модулей
 import tkinter as tk
 from ui.custom_dialogs import messagebox
 from config import load_config, create_engine, resource_path
@@ -15,7 +16,6 @@ import time
 import stats_logger
 
 # ------------------ Настройки ------------------
-APP_VERSION = "1.0.0"
 BACKUP_ENABLED = True
 STATS_ENABLED = True
 SOUND_VOLUME_PERCENT = 30
@@ -194,7 +194,7 @@ def main():
 
     # После успешной авторизации показываем главное окно
     root.deiconify()
-    splash.show(splash.STAGES[1], master=root, version=APP_VERSION)
+    splash.show(splash.STAGES[1], master=root, version=splash.version_text(APP_VERSION))
 
     if STATS_ENABLED:
         stats_logger.enable_stats()

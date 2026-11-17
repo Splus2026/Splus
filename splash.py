@@ -31,6 +31,17 @@ def _bg_path():
     return next((p for p in names if os.path.isfile(p)), None)
 
 
+def version_text(version):
+    """'1.0.0 от 17.11.2026': версия и дата сборки (у exe — время файла программы, из исходников — sp.py)."""
+    try:
+        from datetime import datetime
+        path = sys.executable if getattr(sys, 'frozen', False) else os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), 'sp.py')
+        return f"{version} от {datetime.fromtimestamp(os.path.getmtime(path)).strftime('%d.%m.%Y')}"
+    except Exception:
+        return version
+
+
 def show(status=None, master=None, version=''):
     """Показывает заставку (повторный вызов только обновляет надпись). master=None — своё окно Tk,
        иначе Toplevel главного окна. Возвращает True, если заставка на экране."""
@@ -73,7 +84,7 @@ def show(status=None, master=None, version=''):
         c.create_text(cx, 70, text="Синева+", fill='white', font=('Arial', 26, 'bold'))
         c.create_text(cx, 112, text="платформа динамического поиска", fill='white', font=('Arial', 10))
         if version:
-            c.create_text(WIDTH - 24, 188, text=f"версия {version}", anchor='e', fill='#0b2a55', font=('Arial', 8))
+            c.create_text(WIDTH - 24, 188, text=f"Версия {version}", anchor='e', fill='#0b2a55', font=('Arial', 8))
         _ids['status'] = c.create_text(24, 188, text='', anchor='w', fill='#0b2a55', font=('Arial', 9, 'bold'))
         c.create_rectangle(24, 204, WIDTH - 24, 212, fill='white', outline='#7fa6d6')
         _ids['bar'] = c.create_rectangle(24, 204, 24, 212, fill='#1f5fbf', outline='')
