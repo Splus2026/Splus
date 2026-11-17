@@ -454,7 +454,7 @@ class FileMergerDialog:
             self._msg('showinfo', "Копирование в DB", "Все файлы списка уже находятся в папке DB.")
             return
         clashes = [p for p in todo if os.path.exists(os.path.join(db_dir, os.path.basename(p)))]
-        text = f"Скопировать файлов в папку DB: {len(todo)}?\nИсходные файлы останутся на месте."
+        text = f"Скопировать файлов в папку DB: {len(todo)}?"
         if clashes:
             names = ', '.join(os.path.basename(p) for p in clashes[:5]) + (' ...' if len(clashes) > 5 else '')
             text += f"\n\nВ DB уже есть файлы с такими именами ({len(clashes)}): {names}.\nОни будут ЗАМЕНЕНЫ."
