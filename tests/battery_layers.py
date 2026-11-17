@@ -264,5 +264,31 @@ for _enc in ('utf-8', 'cp1251', 'utf-8-sig'):
     open(_p, 'wb').write(('mconfig="dp.txt= Духовный Путь, Numeric"\r\nтекст\n' * 300).encode(_enc))
     check(f'mconfig в первой строке читается ({_enc}, файл больше 4 КБ)', _mc.read(_p) == (('Духовный Путь', 'Numeric'), ''), str(_mc.read(_p)))
 
+# --- «Удалить» под списком книг: только файлы из DB, с подтверждением ---
+from services import file_manager as _fmmod
+_cwd = os.getcwd(); _wd = tempfile.mkdtemp(); os.chdir(_wd); os.makedirs('DB')
+for _n in ('DB/a.txt', 'DB/b.txt', 'out.txt'):
+    open(_n, 'w', encoding='utf-8').write('x')
+_fm = FileManager(None, {}, 'N1000', None, lambda t: None, {}, lambda: None)
+_fm.update_text_list = lambda: None; _fm._update_selected_text_files = lambda: None
+_ask = {'ans': False, 'n': 0}
+class _MB:
+    @staticmethod
+    def askyesno(*a, **k): _ask['n'] += 1; return _ask['ans']
+    @staticmethod
+    def showwarning(*a, **k): pass
+    @staticmethod
+    def showerror(*a, **k): pass
+_old_mb = _fmmod.messagebox; _fmmod.messagebox = _MB
+_fm.selected_text_files = ['DB/a.txt', 'out.txt']
+check('отказ в подтверждении: ничего не удалено', _fm.delete_selected_files() == 0 and os.path.exists('DB/a.txt') and _ask['n'] == 1)
+_ask['ans'] = True
+check('подтверждение: удалён файл из DB, файл вне DB остался', _fm.delete_selected_files() == 1 and not os.path.exists('DB/a.txt') and os.path.exists('out.txt') and os.path.exists('DB/b.txt'))
+_fm.selected_text_files = ['out.txt']; _ask['n'] = 0
+check('только файлы вне DB: удалять нечего, подтверждение не запрашивается', _fm.delete_selected_files() == 0 and _ask['n'] == 0 and os.path.exists('out.txt'))
+_fm.selected_text_files = []
+check('ничего не выбрано: ничего не удаляется', _fm.delete_selected_files() == 0)
+_fmmod.messagebox = _old_mb; os.chdir(_cwd)
+
 print(f"\nПроверок: {len(results)}, провалено: {results.count(False)}")
 sys.exit(1 if False in results else 0)

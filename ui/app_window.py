@@ -471,7 +471,7 @@ class AppWindow(ABC):
         self.result_text_2.bind('<Button-3>', self.append_selection_to_conspect)
 
     def _build_right_panel(self, main_paned):
-        """Правая часть: список индексов, список файлов и кнопки «Редактирование (разбивка) книги» и обновления."""
+        """Правая часть: список индексов, список файлов и кнопки «Редактор / нумератор» и «Удалить» и обновления."""
         # --- Правая панель ---
         # Ширина увеличена до значения, которое умещает самую широкую строку
         # кнопок целиком (нижнюю — "Редактирование" + список движков), плюс
@@ -573,7 +573,7 @@ class AppWindow(ABC):
         self.text_listbox.bind('<Button-3>', self._on_text_right_click)
 
     def _build_prepare_buttons(self, right_frame):
-        """Внизу правой панели: обновление списка и «Редактирование (разбивка) книги».
+        """Внизу правой панели: обновление списка и «Редактор / нумератор» и «Удалить» (выбранные книги из DB).
            («Добавить книги» вынесена крупной кнопкой в центр окна результатов — ui/start_button.py.)"""
         prepare_frame = tk.Frame(right_frame, bg='#d4e8f7')
         prepare_frame.pack(fill=tk.X, padx=5, pady=5)
@@ -583,10 +583,15 @@ class AppWindow(ABC):
                                 bg=REFRESH_BG, activebackground=REFRESH_BG, bd=2, padx=2, pady=1)
         btn_refresh.pack(side='left', padx=(0, 5))
         ToolTip(btn_refresh, "Обновить список книг")
-        btn_edit = tk.Button(prepare_frame, text="Редактирование (разбивка) книги", command=self._open_selected_file,
+        btn_edit = tk.Button(prepare_frame, text="Редактор / нумератор", command=self._open_selected_file,
                              font=('Arial', 12, 'bold'), bg='#6a4a8a', fg='white',
                              padx=3, pady=1)
         btn_edit.pack(side='left')
+        ToolTip(btn_edit, "Редактирование (разбивка) книги")
+        btn_delete_books = tk.Button(prepare_frame, text="Удалить", command=lambda: self.file_manager.delete_selected_files(),
+                                     bg='#b84a4a', fg='white', font=('Arial', 12, 'bold'), padx=3, pady=1)
+        btn_delete_books.pack(side='left', padx=(5, 0))
+        ToolTip(btn_delete_books, "Удалить выбранные книги из папки DB (с подтверждением)")
 
     def _refresh_lists(self):
         """Кнопка обновления: перечитывает mconfig.ini (псевдонимы баз) и заново

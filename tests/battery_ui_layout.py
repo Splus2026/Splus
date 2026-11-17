@@ -22,6 +22,7 @@ def calls(widget, method=None): return U.calls(U.id(widget), method)
 def btn(text):
     ids = U.find('Button', text=text)
     if len(ids) > 1: ids = [i for i in ids if U.layout(i) != ('pack', {'padx': (4, 0), 'side': 'right'})]   # кнопка режима показа «Все» второй строки — не «Все» индексов
+    if len(ids) > 1 and text == 'Удалить': ids = [i for i in ids if U.layout(i) != ('pack', {'padx': (5, 0), 'side': 'left'})]   # «Удалить» под списком книг — не «Удалить» индексов
     return ids[0] if len(ids) == 1 else ids
 def bopts(text): return U.new(btn(text))[2]
 def blay(text): return U.layout(btn(text))
@@ -110,7 +111,10 @@ check('список индексов: настоящий IndexCheckList под �
 check('заголовок книг: «Книги:», кнопки «▲ В индекс» (_add_to_index) и «▲ Векторы» (prepare_vectors) слева', bool(U.find('Label', text='Книги:')) and bopts('▲ В индекс')['command'] == fn('AppWindow._add_to_index') and bopts('▲ Векторы')['command'] == fn('AppWindow.prepare_vectors') and blay('▲ В индекс') == ('pack', {'padx': 3, 'side': 'left'}) and blay('▲ Векторы') == ('pack', {'padx': 3, 'side': 'left'}))
 lb = win.text_listbox
 check('список файлов: Listbox с выбором нескольких (Ctrl/Shift), Consolas, белый фон, на всё место; выбор и правый клик привязаны', U.new(U.id(lb))[0] == 'Listbox' and opts(lb) == {'font': ('Consolas', win.font_size), 'bg': 'white', 'fg': '#1a2a3a', 'selectmode': 'extended'} and lay(lb) == ('pack', {'expand': True, 'fill': 'both'}) and [(a[0], a[1]) for m, a, k in calls(lb, 'bind')] == [('<<ListboxSelect>>', fn('AppWindow._on_text_select')), ('<Button-3>', fn('AppWindow._on_text_right_click'))], str(calls(lb, 'bind')))
-check('внизу правой панели: обновление списка (картинка) и «Редактирование (разбивка) книги»; «Собрать базу» там больше нет', bopts('Редактирование (разбивка) книги')['command'] == fn('AppWindow._open_selected_file') and blay('Редактирование (разбивка) книги') == ('pack', {'side': 'left'}) and not U.find('Button', text='Собрать базу') and [U.new(i)[2]['command'] for i in U.find('Button', activebackground='#6a4a8a')] == [fn('AppWindow._refresh_lists')] and 'image' in U.new(U.find('Button', activebackground='#6a4a8a')[0])[2] and U.new(U.find('Button', activebackground='#6a4a8a')[0])[2]['bg'] == '#6a4a8a')
+check('внизу правой панели: обновление списка (картинка) и «Редактор / нумератор»; «Собрать базу» там больше нет', bopts('Редактор / нумератор')['command'] == fn('AppWindow._open_selected_file') and blay('Редактор / нумератор') == ('pack', {'side': 'left'}) and not U.find('Button', text='Собрать базу') and [U.new(i)[2]['command'] for i in U.find('Button', activebackground='#6a4a8a')] == [fn('AppWindow._refresh_lists')] and 'image' in U.new(U.find('Button', activebackground='#6a4a8a')[0])[2] and U.new(U.find('Button', activebackground='#6a4a8a')[0])[2]['bg'] == '#6a4a8a')
+_del_books = [b for b in U.find('Button', text='Удалить') if U.layout(b) == ('pack', {'padx': (5, 0), 'side': 'left'})]
+check('внизу правой панели справа от «Редактор / нумератор» кнопка «Удалить» (цвет как у «Удалить» индексов #b84a4a), удаляет выбранные книги из DB',
+      len(_del_books) == 1 and U.new(_del_books[0])[2]['bg'] == '#b84a4a' and U.new(_del_books[0])[2]['fg'] == 'white' and U.new(_del_books[0])[2]['font'] == ('Arial', 12, 'bold'))
 sb = U.find('Button', text='Добавить книги')
 check('«Добавить книги»: одна крупная стартовая кнопка внутри окна результатов, команда open_file_merger', len(sb) == 1 and U.new(sb[0])[1] == ('w', U.id(win.result_text)) and U.new(sb[0])[2]['command'] == fn('AppWindow.open_file_merger'))
 # ===================== H. итог =====================

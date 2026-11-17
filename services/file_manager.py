@@ -328,6 +328,39 @@ class FileManager:
                 msg += f"\n... и ещё {len(errors) - 5} ошибок"
         return msg
 
+    def delete_selected_files(self):
+        """Кнопка «Удалить» под списком книг: удаляет с подтверждением выбранные файлы из папки DB.
+           Файлы вне DB (рабочая папка) не трогаются. Возвращает число удалённых файлов."""
+        selected = list(self.selected_text_files or [])
+        if not selected:
+            messagebox.showwarning("Нет выбора", "Сначала выберите файлы в списке книг.")
+            return 0
+        db_abs = os.path.abspath("DB")
+        in_db = [p for p in selected if os.path.dirname(os.path.abspath(p)) == db_abs]
+        skipped = len(selected) - len(in_db)
+        if not in_db:
+            messagebox.showwarning("Нечего удалять", "Удалять можно только файлы из папки DB.")
+            return 0
+        names = [os.path.basename(p) for p in in_db]
+        shown = "\n".join(names[:10]) + (f"\n… и ещё {len(names) - 10}" if len(names) > 10 else "")
+        note = f"\n\n(Файлы вне папки DB не удаляются: {skipped})" if skipped else ""
+        if not messagebox.askyesno("Удаление книг",
+                                   f"Удалить из папки DB файлов: {len(names)}?\n\n{shown}{note}\n\nОтменить удаление будет нельзя."):
+            return 0
+        removed, errors = 0, []
+        for path in in_db:
+            try:
+                os.remove(path)
+                removed += 1
+            except OSError as e:
+                errors.append(f"{os.path.basename(path)}: {e}")
+        self.update_text_list()
+        self._update_selected_text_files()
+        if errors:
+            messagebox.showerror("Ошибка", "Не удалось удалить:\n" + "\n".join(errors))
+        self.update_status(f"Удалено файлов из DB: {removed}")
+        return removed
+
     def open_selected_file(self):
         """Открывает первый выбранный файл во внешней программе. Возвращает
            True, если файл действительно открыт, и False при любой неудаче

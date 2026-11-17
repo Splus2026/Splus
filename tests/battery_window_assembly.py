@@ -49,7 +49,7 @@ check('сообщение СЕРВИСА (FileManager) доходит до за�
 check('контроллер визуализаций создан и знает своё окно', isinstance(win.viz, vc.VisualizationController) and win.viz.app is win)
 check('поиск скрывает визуализацию через метод КОНТРОЛЛЕРА (колбэк SearchController подключён)', win.search_controller.hide_vector_viz_callback == win.viz.hide_vector_visualization)
 buttons = {w.options.get('text'): w for w in tk.CREATED if isinstance(w, tk.Button) and w.options.get('text')}
-expected = {'Т', 'Ц', 'Ч', 'КП', '−В', 'Краткий', 'Полный', 'Отметки', 'Помощь', 'Мысли', 'A+', 'Цвет', '<< В начало', 'В конец >>', 'Вперед ▶', 'Редактирование (разбивка) книги', '3D/2D', '▲ В индекс', '▲ Векторы'}
+expected = {'Т', 'Ц', 'Ч', 'КП', '−В', 'Краткий', 'Полный', 'Отметки', 'Помощь', 'Мысли', 'A+', 'Цвет', '<< В начало', 'В конец >>', 'Вперед ▶', 'Редактор / нумератор', '3D/2D', '▲ В индекс', '▲ Векторы'}
 check('все основные кнопки созданы', expected <= set(buttons), str(sorted(expected - set(buttons))))
 check('у каждой кнопки с обработчиком обработчик вызываемый', all(callable(b.options['command']) for b in buttons.values() if b.options.get('command') is not None))
 check('«Т» и «Ц» привязаны к методам контроллера', buttons['Т'].options['command'] == win.viz.show_word_cloud_for_selected and buttons['Ц'].options['command'] == win.viz.show_textrank_for_selected)
