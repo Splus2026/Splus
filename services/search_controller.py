@@ -810,6 +810,18 @@ class SearchController:
         if stats_logger.STATS_ENABLED:
             stats_logger.log_exclusions(query, self.excluded_words)
 
+        # Искать можно ТОЛЬКО по индексам, отмеченным галочкой (правое верхнее окно): индекс, созданный
+        # или открытый последним, сам по себе поиск не включает.
+        if (getattr(self.engine, 'engine_type', 'fts5') in ('elasticsearch', 'manticore')
+                and not self.index_manager.get_selected_indices_ordered()):
+            if self.hide_vector_viz_callback:
+                self.hide_vector_viz_callback()
+            self._clear_result_panes()
+            self.renderer.render_help_text()
+            self.update_status("⚠️ Отметьте галочкой индекс в правом верхнем окне — поиск идёт только по отмеченным.")
+            self._update_nav_buttons()
+            return
+
         plan = self._plan_search()
         if plan.vector_key:
             self._route_vector_search(query, plan)
@@ -889,10 +901,7 @@ class SearchController:
         selected_ordered = []
         if engine_type in ('elasticsearch', 'manticore'):
             selected_ordered = self.index_manager.get_selected_indices_ordered()
-            if selected_ordered:
-                indices_to_search = selected_ordered
-            else:
-                indices_to_search = [self.engine._current_index]
+            indices_to_search = selected_ordered   # только отмеченные галочкой (do_search без отметок не доходит сюда)
 
         # Модель ("FT ...") теперь работает ТОЛЬКО совместно с обычными
         # индексами: если среди отмеченных строк есть модель, поиск ведётся
