@@ -185,7 +185,27 @@ def make_safe_index_name(filename: str, engine_type: str) -> tuple:
     return safe_name, expected_full_name
 
 
+_RESERVED_SEPARATORS = {'numeric': 'Numeric', 'excelrow1': 'ExcelRow1'}
+
+
+def normalize_separator(separator):
+    """Служебные разделители (Numeric, ExcelRow1, N2000, NS1000) пишут по-разному — numeric, NUMERIC, n2000,
+       ns1000, с пробелами. Приводим к каноническому виду; прочее (свой разделитель-строка) не трогаем."""
+    sep = (separator or '').strip().strip('"\'“”«»').strip()
+    low = sep.lower()
+    if low in _RESERVED_SEPARATORS:
+        return _RESERVED_SEPARATORS[low]
+    m = re.fullmatch(r'(ns|n)\s*(\d+)', low)
+    if m:
+        return m.group(1).upper() + m.group(2)
+    return separator
+
+
+_INVISIBLE_LEAD = '\ufeff\u200b\u200c\u200d\u2060\u00a0\u202f'
+
+
 def split_into_sections_by_separator(lines, separator):
+    separator = normalize_separator(separator)
     if separator == "Numeric":
         return _split_numeric(lines)
     elif separator == "ExcelRow1":
@@ -220,14 +240,14 @@ def _split_numeric(lines):
     current_title = ""
     current_start = 0
     for i, line in enumerate(lines):
-        if line.strip() and re.match(r'^\d+', line.strip()):
+        if line.strip() and re.match(r'^\d+', line.strip(_INVISIBLE_LEAD + ' \t\r\n')):
             if current_section:
                 sections.append({
                     'lines': current_section,
                     'title': current_title,
                     'start_line': current_start
                 })
-            current_title = line.strip()[:100]
+            current_title = line.strip(_INVISIBLE_LEAD + ' \t\r\n')[:100]
             current_section = [line]
             current_start = i
         else:
@@ -436,6 +456,7 @@ def split_into_blocks_by_size_with_positions(text, block_size):
     return blocks, {'starts': starts, 'ends': ends}
 
 def log_sections(separator, sections, log_file="index_debug.log"):
+    separator = normalize_separator(separator)
     try:
         if separator == "Numeric":
             sep_desc = "Разделитель по номерам строк"
